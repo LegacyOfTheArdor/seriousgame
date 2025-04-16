@@ -1,0 +1,37 @@
+[gd_scene load_steps=2 format=3 uid="uid://b56vpaap66hgs"]
+
+[ext_resource type="Script" path="res://MainMenu.cs" id="1_eji6r"]
+
+[node name="Control" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+script = ExtResource("1_eji6r")
+
+[node name="Panel" type="Panel" parent="CanvasLayer"]
+offset_right = 1152.0
+offset_bottom = 648.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/Panel"]
+layout_mode = 0
+offset_left = 198.0
+offset_right = 935.0
+offset_bottom = 648.0
+alignment = 1
+
+[node name="PlayButton" type="Button" parent="CanvasLayer/Panel/VBoxContainer"]
+custom_minimum_size = Vector2(500, 75)
+layout_mode = 2
+
+[node name="EditButton" type="Button" parent="CanvasLayer/Panel/VBoxContainer"]
+custom_minimum_size = Vector2(500, 75)
+layout_mode = 2
+
+[node name="ExitButton" type="Button" parent="CanvasLayer/Panel/VBoxContainer"]
+custom_minimum_size = Vector2(500, 75)
+layout_mode = 2
