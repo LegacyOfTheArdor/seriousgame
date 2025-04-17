@@ -1,6 +1,17 @@
-[gd_scene load_steps=2 format=3 uid="uid://b56vpaap66hgs"]
+[gd_scene load_steps=4 format=3 uid="uid://b56vpaap66hgs"]
 
 [ext_resource type="Script" path="res://MainMenu.cs" id="1_eji6r"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_8o5t8"]
+bg_color = Color(1, 1, 1, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_fkf8r"]
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 50
+border_width_top = 50
+border_width_right = 50
+border_width_bottom = 50
+border_color = Color(0.705882, 0.776471, 0.905882, 1)
 
 [node name="Control" type="Control"]
 layout_mode = 3
@@ -13,25 +24,50 @@ grow_vertical = 2
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 script = ExtResource("1_eji6r")
 
-[node name="Panel" type="Panel" parent="CanvasLayer"]
-offset_right = 1152.0
-offset_bottom = 648.0
+[node name="outerborder" type="Panel" parent="CanvasLayer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_8o5t8")
 
-[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/Panel"]
-layout_mode = 0
-offset_left = 198.0
-offset_right = 935.0
-offset_bottom = 648.0
+[node name="Panel" type="Panel" parent="CanvasLayer/outerborder"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.035
+anchor_top = 0.05
+anchor_right = 0.965
+anchor_bottom = 0.95
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_fkf8r")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/outerborder/Panel"]
+z_as_relative = false
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.046
+anchor_top = 0.085
+anchor_right = 0.953
+anchor_bottom = 0.914
+offset_left = 250.717
+offset_top = 0.428005
+offset_right = -221.006
+offset_bottom = 1.9552
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 70
 alignment = 1
 
-[node name="PlayButton" type="Button" parent="CanvasLayer/Panel/VBoxContainer"]
+[node name="PlayButton" type="Button" parent="CanvasLayer/outerborder/Panel/VBoxContainer"]
 custom_minimum_size = Vector2(500, 75)
 layout_mode = 2
 
-[node name="EditButton" type="Button" parent="CanvasLayer/Panel/VBoxContainer"]
+[node name="EditButton" type="Button" parent="CanvasLayer/outerborder/Panel/VBoxContainer"]
 custom_minimum_size = Vector2(500, 75)
 layout_mode = 2
 
-[node name="ExitButton" type="Button" parent="CanvasLayer/Panel/VBoxContainer"]
+[node name="ExitButton" type="Button" parent="CanvasLayer/outerborder/Panel/VBoxContainer"]
 custom_minimum_size = Vector2(500, 75)
 layout_mode = 2
