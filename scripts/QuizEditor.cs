@@ -3,12 +3,12 @@ using Godot;
 public partial class QuizEditor : Control
 {
 	private QuizResource currentQuiz;
-	private Button deleteQuizButton;
+	
+
 
 	public override void _Ready()
 	{
-		deleteQuizButton = GetNode<Button>("DeleteQuizButton");
-		deleteQuizButton.Pressed += OnDeleteQuizPressed;
+		
 		// Initialize other UI elements
 	}
 
@@ -20,4 +20,5 @@ public partial class QuizEditor : Control
 			currentQuiz = ResourceLoader.Load<QuizResource>(path);
 			UpdateUI();
 		}
-		e
+	}
+	}

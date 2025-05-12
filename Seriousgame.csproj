@@ -5,4 +5,10 @@
     <TargetFramework Condition=" '$(GodotTargetPlatform)' == 'ios' ">net8.0</TargetFramework>
     <EnableDynamicLoading>true</EnableDynamicLoading>
   </PropertyGroup>
+
+    <ItemGroup>
+    <Reference Include="QRCoder">
+      <HintPath>libs/QRCoder.dll</HintPath>
+    </Reference>
+  </ItemGroup>
 </Project>

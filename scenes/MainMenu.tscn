@@ -1,6 +1,6 @@
-[gd_scene load_steps=4 format=3 uid="uid://b56vpaap66hgs"]
+[gd_scene load_steps=5 format=3 uid="uid://b56vpaap66hgs"]
 
-[ext_resource type="Script" path="res://MainMenu.cs" id="1_eji6r"]
+[ext_resource type="Script" path="res://scripts/MainMenu.cs" id="1_eji6r"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_8o5t8"]
 bg_color = Color(1, 1, 1, 1)
@@ -12,6 +12,9 @@ border_width_top = 50
 border_width_right = 50
 border_width_bottom = 50
 border_color = Color(0.705882, 0.776471, 0.905882, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hwj22"]
+bg_color = Color(0.266667, 0.447059, 0.768627, 1)
 
 [node name="Control" type="Control"]
 layout_mode = 3
@@ -63,11 +66,14 @@ alignment = 1
 [node name="PlayButton" type="Button" parent="CanvasLayer/outerborder/Panel/VBoxContainer"]
 custom_minimum_size = Vector2(500, 75)
 layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_hwj22")
 
 [node name="EditButton" type="Button" parent="CanvasLayer/outerborder/Panel/VBoxContainer"]
 custom_minimum_size = Vector2(500, 75)
 layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_hwj22")
 
 [node name="ExitButton" type="Button" parent="CanvasLayer/outerborder/Panel/VBoxContainer"]
 custom_minimum_size = Vector2(500, 75)
 layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_hwj22")
