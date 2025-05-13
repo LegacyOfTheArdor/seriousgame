@@ -6,9 +6,8 @@
     <EnableDynamicLoading>true</EnableDynamicLoading>
   </PropertyGroup>
 
-    <ItemGroup>
-    <Reference Include="QRCoder">
-      <HintPath>libs/QRCoder.dll</HintPath>
-    </Reference>
+  <ItemGroup>
+    <PackageReference Include="QRCoder" Version="1.6.0" />
+    <PackageReference Include="System.Drawing.Common" Version="7.0.0" />
   </ItemGroup>
 </Project>
