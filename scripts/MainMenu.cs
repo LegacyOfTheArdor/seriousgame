@@ -3,9 +3,9 @@ using Godot;
 public partial class MainMenu : CanvasLayer
 {
 	private Panel panel;
-	private Button playButton;
-	private Button editButton;
-	private Button exitButton;
+	[Export] public Button PlayButton;
+	[Export] public Button EditButton;
+	[Export] public Button ExitButton;
 
 	public override void _Ready()
 	{
@@ -24,15 +24,16 @@ public partial class MainMenu : CanvasLayer
 
 	private void OnPlayButtonPressed()
 	{
-		
-	  GetTree().ChangeSceneToFile("res://QuizSelection.tscn");
+		// Set edit mode to false in the singleton before switching scenes
+		GetNode<GameState>("/root/GameState").EditMode = false;
+		GetTree().ChangeSceneToFile("res://scenes/QuizSelection.tscn");
 	}
 
 	private void OnEditButtonPressed()
 	{
-		GetTree().ChangeSceneToFile("res://QuizSelection.tscn");
-		// Pass a parameter to indicate edit mode
-		GetNode<QuizSelection>("/root/QuizSelection").SetEditMode(true);
+		// Set edit mode to true in the singleton before switching scenes
+		GetNode<GameState>("/root/GameState").EditMode = true;
+		GetTree().ChangeSceneToFile("res://scenes/QuizSelection.tscn");
 	}
 
 	private void OnExitButtonPressed()

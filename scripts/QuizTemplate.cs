@@ -21,12 +21,21 @@ public partial class QuizTemplate : Node
 	private Action backCallback;
 
 	private bool isEditMode = true;
+	private bool signalsConnected = false;
 
 	public override void _Ready()
 	{
 		// Optional: connect toggle button if present
 		if (ToggleEditButton != null)
 			ToggleEditButton.Pressed += () => SetEditMode(!isEditMode);
+
+		// Connect save/back buttons ONCE
+		if (!signalsConnected)
+		{
+			SaveButton.Pressed += OnSavePressed;
+			BackButton.Pressed += OnBackPressed;
+			signalsConnected = true;
+		}
 	}
 
 	public void SetQuizData(QuizData data, Action<string, QuizData> onSave, Action onBack)
@@ -43,16 +52,17 @@ public partial class QuizTemplate : Node
 	private void BuildUI()
 	{
 		// --- Quiz Title ---
-		TitleEdit.Text = quizData.quizTitle;
-		TitleLabel.Text = quizData.quizTitle;
+		TitleEdit.Text = quizData.title;
+		TitleLabel.Text = quizData.title;
 
 		// --- Slider Titles ---
-		SliderTitlesContainer.QueueFreeChildren();
+		ClearContainerChildren(SliderTitlesContainer);
 		for (int i = 0; i < quizData.sliderTitles.Count; i++)
 		{
 			var sliderTitleEdit = new LineEdit { Name = $"SliderTitleEdit{i}", Text = quizData.sliderTitles[i] };
 			var sliderTitleLabel = new Label { Name = $"SliderTitleLabel{i}", Text = quizData.sliderTitles[i] };
-			sliderTitleEdit.TextChanged += (txt) => { quizData.sliderTitles[i] = txt; sliderTitleLabel.Text = txt; };
+			int idx = i;
+			sliderTitleEdit.TextChanged += (txt) => { quizData.sliderTitles[idx] = txt; sliderTitleLabel.Text = txt; };
 			sliderTitleEdit.AddToGroup("edit_fields");
 			sliderTitleLabel.AddToGroup("display_fields");
 			SliderTitlesContainer.AddChild(sliderTitleEdit);
@@ -60,7 +70,7 @@ public partial class QuizTemplate : Node
 		}
 
 		// --- Questions and Answers ---
-		QuestionsContainer.QueueFreeChildren();
+		ClearContainerChildren(QuestionsContainer);
 		for (int q = 0; q < quizData.questions.Count; q++)
 		{
 			var question = quizData.questions[q];
@@ -144,10 +154,13 @@ public partial class QuizTemplate : Node
 			}
 			QuestionsContainer.AddChild(new VSeparator());
 		}
+	}
 
-		// Connect save/back buttons
-		SaveButton.Pressed += OnSavePressed;
-		BackButton.Pressed += OnBackPressed;
+	// Helper to clear all children from a container
+	private void ClearContainerChildren(Container container)
+	{
+		for (int i = container.GetChildCount() - 1; i >= 0; i--)
+			container.GetChild(i).QueueFree();
 	}
 
 	// Toggle between edit mode (LineEdits/sliders) and display mode (Labels)
@@ -162,15 +175,15 @@ public partial class QuizTemplate : Node
 
 		// All dynamic fields
 		foreach (Node node in GetTree().GetNodesInGroup("edit_fields"))
-			node.Visible = edit;
+			if (node is Control control) control.Visible = edit;
 		foreach (Node node in GetTree().GetNodesInGroup("display_fields"))
-			node.Visible = !edit;
+			if (node is Control control) control.Visible = !edit;
 	}
 
 	private void OnSavePressed()
 	{
-		quizData.quizTitle = TitleEdit.Text;
-		saveCallback?.Invoke(quizData.quizTitle, quizData);
+		quizData.title = TitleEdit.Text;
+		saveCallback?.Invoke(quizData.title, quizData);
 	}
 
 	private void OnBackPressed()
