@@ -1,127 +1,133 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using System.Text.Json;
-using System.IO;
 
-public partial class QuizEditor : Node
+public partial class QuizEditor : Control
 {
-	[Export] public PackedScene QuizTemplateScene;
-	[Export] public VBoxContainer QuizListContainer;
-	[Export] public string QuizFolder = "res://quizzes/";
+	private QuizData quizData;
+	private Action<string, QuizData> saveCallback;
+	private Action returnCallback;
 
-	private Node quizInstance;
-	private QuizData currentQuizData;
-	private string currentQuizFile;
+	private VBoxContainer sliderTitleContainer;
+	private VBoxContainer questionsContainer;
+	private Button saveQuizButton;
+	private Button backButton;
 
 	public override void _Ready()
 	{
-		string absPath = ProjectSettings.GlobalizePath(QuizFolder);
-		if (!DirAccess.DirExistsAbsolute(absPath))
-			DirAccess.MakeDirRecursiveAbsolute(absPath);
+		sliderTitleContainer = GetNode<VBoxContainer>("SliderTitleContainer");
+		questionsContainer = GetNode<VBoxContainer>("QuestionsContainer");
+		saveQuizButton = GetNode<Button>("SaveQuizButton");
+		backButton = GetNode<Button>("BackButton");
 
-		PopulateQuizList();
+		saveQuizButton.Pressed += OnSaveQuizPressed;
+		backButton.Pressed += OnBackPressed;
 	}
 
-	private void PopulateQuizList()
+	public void SetQuizData(QuizData data, Action<string, QuizData> saveCb, Action returnCb)
 	{
-		for (int i = QuizListContainer.GetChildCount() - 1; i >= 0; i--)
-			QuizListContainer.GetChild(i).QueueFree();
+		quizData = data;
+		saveCallback = saveCb;
+		returnCallback = returnCb;
 
-		var dir = DirAccess.Open(QuizFolder);
-		if (dir != null)
+		ShowSliderTitles();
+		ShowQuestions();
+	}
+
+	private void ShowSliderTitles()
+	{
+		// Remove all children
+		foreach (Node child in sliderTitleContainer.GetChildren())
+			child.QueueFree();
+
+		List<LineEdit> edits = new List<LineEdit>();
+		for (int i = 0; i < quizData.sliderTitles.Count; i++)
 		{
-			dir.ListDirBegin();
-			string fileName = dir.GetNext();
-			while (fileName != "")
+			var edit = new LineEdit { Text = quizData.sliderTitles[i] };
+			int idx = i;
+			edit.TextChanged += (newText) => quizData.sliderTitles[idx] = newText;
+			sliderTitleContainer.AddChild(edit);
+			edits.Add(edit);
+		}
+
+		var addSliderBtn = new Button { Text = "Add Slider Title" };
+		addSliderBtn.Pressed += () =>
+		{
+			quizData.sliderTitles.Add($"Slider {quizData.sliderTitles.Count + 1}");
+			// Add a zero value for each answer's sliderValues
+			foreach (var question in quizData.questions)
+				foreach (var answer in question.answers)
+					answer.sliderValues.Add(0f);
+			ShowSliderTitles();
+			ShowQuestions();
+		};
+		sliderTitleContainer.AddChild(addSliderBtn);
+	}
+
+	private void ShowQuestions()
+	{
+		foreach (Node child in questionsContainer.GetChildren())
+			child.QueueFree();
+
+		for (int q = 0; q < quizData.questions.Count; q++)
+		{
+			var question = quizData.questions[q];
+			var questionVBox = new VBoxContainer();
+
+			var questionEdit = new LineEdit { Text = question.questionTitle };
+			int questionIdx = q;
+			questionEdit.TextChanged += (newText) => quizData.questions[questionIdx].questionTitle = newText;
+			questionVBox.AddChild(questionEdit);
+
+			for (int a = 0; a < question.answers.Count; a++)
 			{
-				if (fileName.EndsWith(".json"))
+				var answer = question.answers[a];
+				var answerHBox = new HBoxContainer();
+
+				var answerEdit = new LineEdit { Text = answer.answerTitle };
+				int answerIdx = a;
+				answerEdit.TextChanged += (newText) => quizData.questions[questionIdx].answers[answerIdx].answerTitle = newText;
+				answerHBox.AddChild(answerEdit);
+
+				// Sliders for each stat
+				for (int s = 0; s < quizData.sliderTitles.Count; s++)
 				{
-					Button btn = new Button();
-					btn.Text = Path.GetFileNameWithoutExtension(fileName);
-					btn.Pressed += () => LoadQuiz(btn.Text);
-					QuizListContainer.AddChild(btn);
+					// Ensure sliderValues list is up to date
+					while (answer.sliderValues.Count < quizData.sliderTitles.Count)
+						answer.sliderValues.Add(0f);
+
+					var slider = new HSlider
+					{
+						MinValue = 0,
+						MaxValue = 10,
+						Step = 1,
+						Value = answer.sliderValues[s],
+						SizeFlagsHorizontal = Control.SizeFlags.ExpandFill
+					};
+					int sliderIdx = s;
+					slider.ValueChanged += (value) =>
+					{
+						quizData.questions[questionIdx].answers[answerIdx].sliderValues[sliderIdx] = (float)value;
+					};
+					answerHBox.AddChild(new Label { Text = quizData.sliderTitles[s] });
+					answerHBox.AddChild(slider);
 				}
-				fileName = dir.GetNext();
+
+				questionVBox.AddChild(answerHBox);
 			}
-			dir.ListDirEnd();
+
+			questionsContainer.AddChild(questionVBox);
 		}
-
-		Button newQuizBtn = new Button();
-		newQuizBtn.Text = "+ New Quiz";
-		newQuizBtn.Pressed += NewQuiz;
-		QuizListContainer.AddChild(newQuizBtn);
 	}
 
-	public void NewQuiz()
+	private void OnSaveQuizPressed()
 	{
-		currentQuizData = new QuizData();
-		currentQuizData.sliderTitles = new List<string> { "Strength", "Speed", "Intelligence", "Luck" };
-
-		for (int q = 0; q < 4; q++)
-		{
-			var question = new Question();
-			question.questionTitle = $"Question {q + 1}";
-			for (int a = 0; a < 4; a++)
-			{
-				var answer = new Answer();
-				answer.answerTitle = $"Answer {a + 1}";
-				answer.description = "";
-				answer.upside = "";
-				answer.downside = "";
-				answer.sliderValues = new List<float> { 0, 0, 0, 0 };
-				question.answers.Add(answer);
-			}
-			currentQuizData.questions.Add(question);
-		}
-		currentQuizFile = null;
-		ShowQuizEditor();
+		string quizTitle = quizData.questions.Count > 0 ? quizData.questions[0].questionTitle : "Untitled_Quiz";
+		saveCallback?.Invoke(quizTitle, quizData);
 	}
 
-	public void LoadQuiz(string quizName)
+	private void OnBackPressed()
 	{
-		string filePath = $"{QuizFolder}{quizName}.json";
-		using var file = Godot.FileAccess.Open(filePath, Godot.FileAccess.ModeFlags.Read);
-		string json = file.GetAsText();
-		currentQuizData = JsonSerializer.Deserialize<QuizData>(json);
-		currentQuizFile = filePath;
-		ShowQuizEditor();
-	}
-
-	private void ShowQuizEditor()
-	{
-		if (quizInstance != null && quizInstance.IsInsideTree())
-			quizInstance.QueueFree();
-
-		quizInstance = QuizTemplateScene.Instantiate();
-		AddChild(quizInstance);
-
-		// Always edit mode in the editor; pass required callbacks
-		if (quizInstance is QuizTemplate quizScript)
-			quizScript.SetQuizData(currentQuizData, SaveQuiz, ReturnToList);
-	}
-
-	public void SaveQuiz(string title, QuizData data)
-	{
-		string safeTitle = string.IsNullOrEmpty(title) ? "Untitled_Quiz" : title;
-		string filePath = $"{QuizFolder}{safeTitle}.json";
-		string json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
-
-		using var file = Godot.FileAccess.Open(filePath, Godot.FileAccess.ModeFlags.Write);
-		file.StoreString(json);
-
-		currentQuizFile = filePath;
-		currentQuizData = data;
-
-		GD.Print($"Quiz saved to {filePath}");
-
-		ReturnToList();
-	}
-
-	public void ReturnToList()
-	{
-		if (quizInstance != null && quizInstance.IsInsideTree())
-			quizInstance.QueueFree();
-		PopulateQuizList();
+		returnCallback?.Invoke();
 	}
 }

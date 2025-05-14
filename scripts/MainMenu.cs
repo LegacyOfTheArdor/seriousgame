@@ -9,14 +9,14 @@ public partial class MainMenu : CanvasLayer
 
 	public override void _Ready()
 	{
-		panel = GetNode<Panel>("Panel");
-		playButton = GetNode<Button>("Panel/VBoxContainer/PlayButton");
-		editButton = GetNode<Button>("Panel/VBoxContainer/EditButton");
-		exitButton = GetNode<Button>("Panel/VBoxContainer/ExitButton");
+		panel = GetNode<Panel>("outerborder/Panel");
+		PlayButton = GetNode<Button>("outerborder/Panel/VBoxContainer/PlayButton");
+		EditButton = GetNode<Button>("outerborder/Panel/VBoxContainer/EditButton");
+		ExitButton = GetNode<Button>("outerborder/Panel/VBoxContainer/ExitButton");
 
-		playButton.Pressed += OnPlayButtonPressed;
-		editButton.Pressed += OnEditButtonPressed;
-		exitButton.Pressed += OnExitButtonPressed;
+		PlayButton.Pressed += OnPlayButtonPressed;
+		EditButton.Pressed += OnEditButtonPressed;
+		ExitButton.Pressed += OnExitButtonPressed;
 
 		// Optionally, set the Panel to expand and fill the entire viewport
 		panel.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);

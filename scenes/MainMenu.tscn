@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3 uid="uid://b56vpaap66hgs"]
+[gd_scene load_steps=7 format=3 uid="uid://b56vpaap66hgs"]
 
 [ext_resource type="Script" path="res://scripts/MainMenu.cs" id="1_eji6r"]
 
@@ -13,7 +13,18 @@ border_width_right = 50
 border_width_bottom = 50
 border_color = Color(0.705882, 0.776471, 0.905882, 1)
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_cyopg"]
+bg_color = Color(0.266667, 0.447059, 0.768627, 1)
+
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hwj22"]
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 15
+border_width_top = 15
+border_width_right = 15
+border_width_bottom = 15
+border_color = Color(0.266667, 0.447059, 0.768627, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_e3olr"]
 bg_color = Color(0.266667, 0.447059, 0.768627, 1)
 
 [node name="Control" type="Control"]
@@ -66,14 +77,27 @@ alignment = 1
 [node name="PlayButton" type="Button" parent="CanvasLayer/outerborder/Panel/VBoxContainer"]
 custom_minimum_size = Vector2(500, 75)
 layout_mode = 2
+theme_override_colors/font_disabled_color = Color(0, 0, 0, 1)
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_styles/hover = SubResource("StyleBoxFlat_cyopg")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_cyopg")
 theme_override_styles/normal = SubResource("StyleBoxFlat_hwj22")
+text = "Spelen"
 
 [node name="EditButton" type="Button" parent="CanvasLayer/outerborder/Panel/VBoxContainer"]
 custom_minimum_size = Vector2(500, 75)
 layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_styles/hover = SubResource("StyleBoxFlat_e3olr")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_cyopg")
 theme_override_styles/normal = SubResource("StyleBoxFlat_hwj22")
+text = "Aanpassen"
 
 [node name="ExitButton" type="Button" parent="CanvasLayer/outerborder/Panel/VBoxContainer"]
 custom_minimum_size = Vector2(500, 75)
 layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_styles/hover = SubResource("StyleBoxFlat_cyopg")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_cyopg")
 theme_override_styles/normal = SubResource("StyleBoxFlat_hwj22")
+text = "Afsluiten"

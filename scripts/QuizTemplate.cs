@@ -2,192 +2,87 @@ using Godot;
 using System;
 using System.Collections.Generic;
 
-public partial class QuizTemplate : Node
+public partial class QuizTemplate : Control
 {
-	// Quiz title fields
-	[Export] public LineEdit TitleEdit;
-	[Export] public Label TitleLabel;
-
-	// Containers for slider titles, questions, and answers
-	[Export] public VBoxContainer SliderTitlesContainer;
-	[Export] public VBoxContainer QuestionsContainer;
-
-	[Export] public Button SaveButton;
-	[Export] public Button BackButton;
-	[Export] public Button ToggleEditButton; // Optional: button to toggle modes
-
 	private QuizData quizData;
-	private Action<string, QuizData> saveCallback;
-	private Action backCallback;
+	private Action returnCallback;
 
-	private bool isEditMode = true;
-	private bool signalsConnected = false;
+	private VBoxContainer sliderTitleContainer;
+	private VBoxContainer questionsContainer;
+	private Button backButton;
 
 	public override void _Ready()
 	{
-		// Optional: connect toggle button if present
-		if (ToggleEditButton != null)
-			ToggleEditButton.Pressed += () => SetEditMode(!isEditMode);
-
-		// Connect save/back buttons ONCE
-		if (!signalsConnected)
-		{
-			SaveButton.Pressed += OnSavePressed;
-			BackButton.Pressed += OnBackPressed;
-			signalsConnected = true;
-		}
+		sliderTitleContainer = GetNode<VBoxContainer>("SliderTitleContainer");
+		questionsContainer = GetNode<VBoxContainer>("QuestionsContainer");
+		backButton = GetNode<Button>("BackButton");
+		backButton.Pressed += OnBackPressed;
 	}
 
-	public void SetQuizData(QuizData data, Action<string, QuizData> onSave, Action onBack)
+	public void SetQuizData(QuizData data, Action returnCb)
 	{
 		quizData = data;
-		saveCallback = onSave;
-		backCallback = onBack;
+		returnCallback = returnCb;
 
-		BuildUI();
-		SetEditMode(true); // Start in edit mode
+		ShowSliderTitles();
+		ShowQuestions();
 	}
 
-	// Build all UI fields for quiz title, slider titles, questions, and answers
-	private void BuildUI()
+	private void ShowSliderTitles()
 	{
-		// --- Quiz Title ---
-		TitleEdit.Text = quizData.title;
-		TitleLabel.Text = quizData.title;
+		foreach (Node child in sliderTitleContainer.GetChildren())
+			child.QueueFree();
 
-		// --- Slider Titles ---
-		ClearContainerChildren(SliderTitlesContainer);
-		for (int i = 0; i < quizData.sliderTitles.Count; i++)
+		foreach (var title in quizData.sliderTitles)
 		{
-			var sliderTitleEdit = new LineEdit { Name = $"SliderTitleEdit{i}", Text = quizData.sliderTitles[i] };
-			var sliderTitleLabel = new Label { Name = $"SliderTitleLabel{i}", Text = quizData.sliderTitles[i] };
-			int idx = i;
-			sliderTitleEdit.TextChanged += (txt) => { quizData.sliderTitles[idx] = txt; sliderTitleLabel.Text = txt; };
-			sliderTitleEdit.AddToGroup("edit_fields");
-			sliderTitleLabel.AddToGroup("display_fields");
-			SliderTitlesContainer.AddChild(sliderTitleEdit);
-			SliderTitlesContainer.AddChild(sliderTitleLabel);
+			var label = new Label { Text = title };
+			sliderTitleContainer.AddChild(label);
 		}
+	}
 
-		// --- Questions and Answers ---
-		ClearContainerChildren(QuestionsContainer);
+	private void ShowQuestions()
+	{
+		foreach (Node child in questionsContainer.GetChildren())
+			child.QueueFree();
+
 		for (int q = 0; q < quizData.questions.Count; q++)
 		{
 			var question = quizData.questions[q];
+			var questionVBox = new VBoxContainer();
 
-			// Question title
-			var questionEdit = new LineEdit { Name = $"Question{q}Edit", Text = question.questionTitle };
-			var questionLabel = new Label { Name = $"Question{q}Label", Text = question.questionTitle };
-			int qIdx = q;
-			questionEdit.TextChanged += (txt) => { quizData.questions[qIdx].questionTitle = txt; questionLabel.Text = txt; };
-			questionEdit.AddToGroup("edit_fields");
-			questionLabel.AddToGroup("display_fields");
-			QuestionsContainer.AddChild(new Label { Text = $"Question {q + 1}:" });
-			QuestionsContainer.AddChild(questionEdit);
-			QuestionsContainer.AddChild(questionLabel);
+			var questionLabel = new Label { Text = $"Q{q + 1}: {question.questionTitle}" };
+			questionVBox.AddChild(questionLabel);
 
-			// Answers
 			for (int a = 0; a < question.answers.Count; a++)
 			{
 				var answer = question.answers[a];
-				int aIdx = a;
+				var answerHBox = new HBoxContainer();
 
-				// Answer title
-				var answerTitleEdit = new LineEdit { Name = $"Q{q}A{a}TitleEdit", Text = answer.answerTitle };
-				var answerTitleLabel = new Label { Name = $"Q{q}A{a}TitleLabel", Text = answer.answerTitle };
-				answerTitleEdit.TextChanged += (txt) => { quizData.questions[qIdx].answers[aIdx].answerTitle = txt; answerTitleLabel.Text = txt; };
-				answerTitleEdit.AddToGroup("edit_fields");
-				answerTitleLabel.AddToGroup("display_fields");
-				QuestionsContainer.AddChild(new Label { Text = $"Answer {a + 1}:" });
-				QuestionsContainer.AddChild(answerTitleEdit);
-				QuestionsContainer.AddChild(answerTitleLabel);
+				var answerLabel = new Label { Text = $"A{a + 1}: {answer.answerTitle}" };
+				answerHBox.AddChild(answerLabel);
 
-				// Description
-				var descEdit = new LineEdit { Name = $"Q{q}A{a}DescEdit", Text = answer.description };
-				var descLabel = new Label { Name = $"Q{q}A{a}DescLabel", Text = answer.description };
-				descEdit.TextChanged += (txt) => { quizData.questions[qIdx].answers[aIdx].description = txt; descLabel.Text = txt; };
-				descEdit.AddToGroup("edit_fields");
-				descLabel.AddToGroup("display_fields");
-				QuestionsContainer.AddChild(new Label { Text = "Description:" });
-				QuestionsContainer.AddChild(descEdit);
-				QuestionsContainer.AddChild(descLabel);
-
-				// Upside
-				var upsideEdit = new LineEdit { Name = $"Q{q}A{a}UpsideEdit", Text = answer.upside };
-				var upsideLabel = new Label { Name = $"Q{q}A{a}UpsideLabel", Text = answer.upside };
-				upsideEdit.TextChanged += (txt) => { quizData.questions[qIdx].answers[aIdx].upside = txt; upsideLabel.Text = txt; };
-				upsideEdit.AddToGroup("edit_fields");
-				upsideLabel.AddToGroup("display_fields");
-				QuestionsContainer.AddChild(new Label { Text = "Upside:" });
-				QuestionsContainer.AddChild(upsideEdit);
-				QuestionsContainer.AddChild(upsideLabel);
-
-				// Downside
-				var downsideEdit = new LineEdit { Name = $"Q{q}A{a}DownsideEdit", Text = answer.downside };
-				var downsideLabel = new Label { Name = $"Q{q}A{a}DownsideLabel", Text = answer.downside };
-				downsideEdit.TextChanged += (txt) => { quizData.questions[qIdx].answers[aIdx].downside = txt; downsideLabel.Text = txt; };
-				downsideEdit.AddToGroup("edit_fields");
-				downsideLabel.AddToGroup("display_fields");
-				QuestionsContainer.AddChild(new Label { Text = "Downside:" });
-				QuestionsContainer.AddChild(downsideEdit);
-				QuestionsContainer.AddChild(downsideLabel);
-
-				// Sliders for values
+				// Show the slider values as labels (not editable)
 				for (int s = 0; s < quizData.sliderTitles.Count; s++)
 				{
-					var sliderLabel = new Label { Text = quizData.sliderTitles[s] };
-					var slider = new HSlider
+					string sliderText = quizData.sliderTitles[s];
+					float value = answer.sliderValues.Count > s ? answer.sliderValues[s] : 0f;
+					var valueLabel = new Label
 					{
-						MinValue = 0,
-						MaxValue = 10,
-						Step = 1,
-						Value = answer.sliderValues[s]
+						Text = $"{sliderText}: {value}"
 					};
-					int sIdx = s;
-					slider.ValueChanged += (val) => quizData.questions[qIdx].answers[aIdx].sliderValues[sIdx] = (float)val;
-					slider.AddToGroup("edit_fields"); // Only editable in edit mode
-					QuestionsContainer.AddChild(sliderLabel);
-					QuestionsContainer.AddChild(slider);
+					answerHBox.AddChild(valueLabel);
 				}
 
-				QuestionsContainer.AddChild(new HSeparator());
+				questionVBox.AddChild(answerHBox);
 			}
-			QuestionsContainer.AddChild(new VSeparator());
+
+			questionsContainer.AddChild(questionVBox);
 		}
-	}
-
-	// Helper to clear all children from a container
-	private void ClearContainerChildren(Container container)
-	{
-		for (int i = container.GetChildCount() - 1; i >= 0; i--)
-			container.GetChild(i).QueueFree();
-	}
-
-	// Toggle between edit mode (LineEdits/sliders) and display mode (Labels)
-	public void SetEditMode(bool edit)
-	{
-		isEditMode = edit;
-
-		// Quiz title
-		TitleEdit.Visible = edit;
-		TitleLabel.Visible = !edit;
-		if (!edit) TitleLabel.Text = TitleEdit.Text;
-
-		// All dynamic fields
-		foreach (Node node in GetTree().GetNodesInGroup("edit_fields"))
-			if (node is Control control) control.Visible = edit;
-		foreach (Node node in GetTree().GetNodesInGroup("display_fields"))
-			if (node is Control control) control.Visible = !edit;
-	}
-
-	private void OnSavePressed()
-	{
-		quizData.title = TitleEdit.Text;
-		saveCallback?.Invoke(quizData.title, quizData);
 	}
 
 	private void OnBackPressed()
 	{
-		backCallback?.Invoke();
+		returnCallback?.Invoke();
 	}
 }
+	
