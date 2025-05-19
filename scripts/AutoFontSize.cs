@@ -1,7 +1,7 @@
 using Godot;
 
 [GlobalClass]
-public partial class AutoFontSizeLabel : Label
+public partial class AutoFontSize : Label
 {
 	[Export] public int FontSizeMin = 8;
 	[Export] public int FontSizeMax = 16;

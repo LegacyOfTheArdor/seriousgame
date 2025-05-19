@@ -2,6 +2,7 @@ using System.Collections.Generic;
 
 public class QuizData
 {
+	public string Name { get; set; } // <-- voeg deze regel toe
 	public List<string> sliderTitles { get; set; } = new List<string>();
 	public List<Question> questions { get; set; } = new List<Question>();
 }

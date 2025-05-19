@@ -1,35 +1,27 @@
 using Godot;
-using System;
 
 public partial class QRCodeGenerator : Node
 {
-	/// <summary>
-	/// Generates a QR code texture for the given URL and assigns it to the specified TextureRect.
-	/// </summary>
-	public void GenerateQRCode(TextureRect target, string url)
+	public void GenerateQRCode(TextureRect target, string text)
 	{
-		// Load the GDScript QR code generator
+		// Laad het GDScript van de QR code generator
 		var qrCodeScript = GD.Load<GDScript>("res://addons/QrCode.gd");
 		GodotObject qrCode = (GodotObject)qrCodeScript.New();
 
-
-		// Set error correction level (optional)
+		// Zet het foutcorrectieniveau
 		var errorCorrectionLevels = qrCode.Get("ErrorCorrectionLevel").As<GodotObject>();
-		qrCode.Set("error_correct_level", errorCorrectionLevels.Get("LOW"));;
+		qrCode.Set("error_correct_level", errorCorrectionLevels.Get("LOW"));
 
-		// Generate the QR code texture
-		var texture = (ImageTexture)qrCode.Call("get_texture", url);
+		// Genereer de texture van de QR-code
+		var texture = (ImageTexture)qrCode.Call("get_texture", text);
 
-		// Assign to the TextureRect node
+		// Zet de texture op de TextureRect genaamd QRCodeTexture
 		target.Texture = texture;
 
-		// Clean up
+		// Opruimen
 		qrCode.Call("queue_free");
 	}
-
-	/// <summary>
-	/// Returns the first non-localhost IP address found.
-	/// </summary>
+	
 	public static string GetLocalIPAddress()
 	{
 		foreach (string addr in IP.GetLocalAddresses())
