@@ -15,10 +15,10 @@ public partial class QuizSelection : CanvasLayer
 
 	public override void _Ready()
 	{
-		NewQuizButton = GetNode<Button>("outerborder/Panel/MenuGrid/NewQuizButton");
-		NextPageButton = GetNode<Button>("outerborder/Panel/MenuGrid/NextPageButton");
-		PrevPageButton = GetNode<Button>("outerborder/Panel/MenuGrid/PrevPageButton");
-		QuizGrid = GetNode<GridContainer>("outerborder/Panel/QuizGrid");
+		NewQuizButton = GetNode<Button>("PanelContainer/outerborder/Panel/MenuGrid/NewQuizButton");
+		NextPageButton = GetNode<Button>("PanelContainer/outerborder/Panel/MenuGrid/NextPageButton");
+		PrevPageButton = GetNode<Button>("PanelContainer/outerborder/Panel/MenuGrid/PrevPageButton");
+		QuizGrid = GetNode<GridContainer>("PanelContainer/outerborder/Panel/QuizGrid");
 
 		NewQuizButton.Pressed += OnNewQuizPressed;
 		NextPageButton.Pressed += OnNextPagePressed;

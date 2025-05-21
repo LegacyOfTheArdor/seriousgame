@@ -9,10 +9,10 @@ public partial class MainMenu : CanvasLayer
 
 	public override void _Ready()
 	{
-		panel = GetNode<Panel>("outerborder/Panel");
-		PlayButton = GetNode<Button>("outerborder/Panel/VBoxContainer/PlayButton");
-		EditButton = GetNode<Button>("outerborder/Panel/VBoxContainer/EditButton");
-		ExitButton = GetNode<Button>("outerborder/Panel/VBoxContainer/ExitButton");
+		panel = GetNode<Panel>("PanelContainer/outerborder/Panel");
+		PlayButton = GetNode<Button>("PanelContainer/outerborder/Panel/VBoxContainer/PlayButton");
+		EditButton = GetNode<Button>("PanelContainer/outerborder/Panel/VBoxContainer/EditButton");
+		ExitButton = GetNode<Button>("PanelContainer/outerborder/Panel/VBoxContainer/ExitButton");
 
 		PlayButton.Pressed += OnPlayButtonPressed;
 		EditButton.Pressed += OnEditButtonPressed;

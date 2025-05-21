@@ -1,12 +1,13 @@
-[gd_scene load_steps=7 format=3 uid="uid://uv8u1h8kd6kq"]
+[gd_scene load_steps=8 format=3 uid="uid://uv8u1h8kd6kq"]
 
 [ext_resource type="Script" path="res://scripts/QuizSelection.cs" id="1_wnp7e"]
+[ext_resource type="FontFile" uid="uid://bp6kmo3o2pvcv" path="res://fonts/OpenSans-Regular.ttf" id="2_05kkd"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_3x0ou"]
-bg_color = Color(1, 1, 1, 1)
+bg_color = Color(0.945098, 0.976471, 0.984314, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_kmj8m"]
-bg_color = Color(1, 1, 1, 1)
+bg_color = Color(0.945098, 0.976471, 0.984314, 1)
 border_width_left = 50
 border_width_top = 50
 border_width_right = 50
@@ -32,12 +33,18 @@ border_color = Color(0.266667, 0.447059, 0.768627, 1)
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 script = ExtResource("1_wnp7e")
 
-[node name="outerborder" type="Panel" parent="CanvasLayer"]
-offset_right = 1152.0
-offset_bottom = 648.0
+[node name="PanelContainer" type="PanelContainer" parent="CanvasLayer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="outerborder" type="Panel" parent="CanvasLayer/PanelContainer"]
+layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_3x0ou")
 
-[node name="Panel" type="Panel" parent="CanvasLayer/outerborder"]
+[node name="Panel" type="Panel" parent="CanvasLayer/PanelContainer/outerborder"]
 layout_mode = 1
 anchors_preset = -1
 anchor_left = 0.035
@@ -46,7 +53,7 @@ anchor_right = 0.965
 anchor_bottom = 0.95
 theme_override_styles/panel = SubResource("StyleBoxFlat_kmj8m")
 
-[node name="QuizGrid" type="GridContainer" parent="CanvasLayer/outerborder/Panel"]
+[node name="QuizGrid" type="GridContainer" parent="CanvasLayer/PanelContainer/outerborder/Panel"]
 layout_mode = 1
 anchors_preset = -1
 anchor_left = 0.137
@@ -55,7 +62,7 @@ anchor_right = 0.867
 anchor_bottom = 0.66
 columns = 10
 
-[node name="MenuGrid" type="GridContainer" parent="CanvasLayer/outerborder/Panel"]
+[node name="MenuGrid" type="GridContainer" parent="CanvasLayer/PanelContainer/outerborder/Panel"]
 layout_mode = 1
 anchors_preset = -1
 anchor_left = 0.278
@@ -64,7 +71,7 @@ anchor_right = 0.747
 anchor_bottom = 0.891
 columns = 3
 
-[node name="PrevPageButton" type="Button" parent="CanvasLayer/outerborder/Panel/MenuGrid"]
+[node name="PrevPageButton" type="Button" parent="CanvasLayer/PanelContainer/outerborder/Panel/MenuGrid"]
 custom_minimum_size = Vector2(0, 70)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -72,6 +79,7 @@ size_flags_stretch_ratio = 0.0
 theme_override_colors/font_disabled_color = Color(0, 0, 0, 1)
 theme_override_colors/font_focus_color = Color(0, 0, 0, 1)
 theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("2_05kkd")
 theme_override_styles/hover = SubResource("StyleBoxFlat_2tvx8")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_4oeq1")
 theme_override_styles/normal = SubResource("StyleBoxFlat_t11x1")
@@ -79,7 +87,7 @@ text = "Vorige
 pagina
 "
 
-[node name="NewQuizButton" type="Button" parent="CanvasLayer/outerborder/Panel/MenuGrid"]
+[node name="NewQuizButton" type="Button" parent="CanvasLayer/PanelContainer/outerborder/Panel/MenuGrid"]
 custom_minimum_size = Vector2(0, 70)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -87,13 +95,14 @@ size_flags_stretch_ratio = 0.0
 theme_override_colors/font_disabled_color = Color(0, 0, 0, 1)
 theme_override_colors/font_focus_color = Color(0, 0, 0, 1)
 theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("2_05kkd")
 theme_override_styles/hover = SubResource("StyleBoxFlat_2tvx8")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_4oeq1")
 theme_override_styles/normal = SubResource("StyleBoxFlat_t11x1")
 text = "Nieuwe
 quiz"
 
-[node name="NextPageButton" type="Button" parent="CanvasLayer/outerborder/Panel/MenuGrid"]
+[node name="NextPageButton" type="Button" parent="CanvasLayer/PanelContainer/outerborder/Panel/MenuGrid"]
 custom_minimum_size = Vector2(0, 70)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -101,8 +110,9 @@ size_flags_stretch_ratio = 0.0
 theme_override_colors/font_disabled_color = Color(0, 0, 0, 1)
 theme_override_colors/font_focus_color = Color(0, 0, 0, 1)
 theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("2_05kkd")
 theme_override_styles/hover = SubResource("StyleBoxFlat_2tvx8")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_4oeq1")
 theme_override_styles/normal = SubResource("StyleBoxFlat_t11x1")
-text = "Nieuwe
-quiz"
+text = "Volgende
+Pagina"
