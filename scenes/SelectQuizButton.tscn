@@ -1,0 +1,30 @@
+[gd_scene load_steps=4 format=3 uid="uid://dkqw1oltws3g6"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_5dfli"]
+bg_color = Color(0.266667, 0.447059, 0.768627, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_mbh06"]
+bg_color = Color(0.266667, 0.447059, 0.768627, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ljkl2"]
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(0.266667, 0.447059, 0.768627, 1)
+
+[node name="SelectQuizButton" type="Button"]
+custom_minimum_size = Vector2(75, 20)
+anchors_preset = -1
+anchor_right = 0.359
+anchor_bottom = 0.17
+offset_right = -0.568024
+offset_bottom = -0.160004
+theme_override_colors/font_disabled_color = Color(0, 0, 0, 1)
+theme_override_colors/font_pressed_color = Color(0, 0, 0, 1)
+theme_override_colors/font_focus_color = Color(0, 0, 0, 1)
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_styles/hover = SubResource("StyleBoxFlat_5dfli")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_mbh06")
+theme_override_styles/normal = SubResource("StyleBoxFlat_ljkl2")

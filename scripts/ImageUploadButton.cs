@@ -32,7 +32,7 @@ public partial class ImageUploadButton : Button
 			_fileDialog.FileMode = FileDialog.FileModeEnum.OpenFile;
 			_fileDialog.Title = "Select an Image";
 			// Optionally set the start directory:
-			// _fileDialog.CurrentDir = OS.GetUserDataDir();
+			 _fileDialog.CurrentDir = OS.GetUserDataDir();
 
 			_fileDialog.FileSelected += OnFileSelected;
 		}

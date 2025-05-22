@@ -2,6 +2,8 @@ using Godot;
 
 public partial class MainMenu : CanvasLayer
 {
+	
+
 	private Panel panel;
 	private Button PlayButton;
 	private Button EditButton;
@@ -9,6 +11,8 @@ public partial class MainMenu : CanvasLayer
 
 	public override void _Ready()
 	{
+		GD.Print(ProjectSettings.GlobalizePath("user://"));
+		
 		panel = GetNode<Panel>("PanelContainer/outerborder/Panel");
 		PlayButton = GetNode<Button>("PanelContainer/outerborder/Panel/VBoxContainer/PlayButton");
 		EditButton = GetNode<Button>("PanelContainer/outerborder/Panel/VBoxContainer/EditButton");

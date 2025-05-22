@@ -5,11 +5,16 @@ using System.Text.RegularExpressions;
 
 public partial class QuizTemplate : Node2D
 {
-	private QuizData quizData;
+	
 	private List<Panel> panels = new List<Panel>();
 	private int activePanel = 0;
 	
+	private LineEdit quizNameEdit;
+	
+	public string SelectedQuizFilePath { get; set; }
+	
 	private Button BackToMain;
+	private Button SaveQuiz;
 
 	// --- NEW: Dictionary to keep all value_X LineEdits grouped by name ---
 	private Dictionary<string, List<LineEdit>> valueEdits = new();
@@ -35,14 +40,33 @@ public partial class QuizTemplate : Node2D
 		bool EditMode = ((GameState)GetNode("/root/GameState")).EditMode;
 		SetEditMode(EditMode);
 		
+		quizNameEdit = GetNode<LineEdit>("Node/CanvasLayer/PanelContainer/Einde/Panel/SaveQuizPanel/VBoxContainer/Quiztitle");
+		
+		
+		
+		if (((GameState)GetNode("/root/GameState")).QuizName != null)
+		{
+			quizNameEdit.Text = ((GameState)GetNode("/root/GameState")).QuizName;
+		}
+		
 		BackToMain = GetNode<Button>("Node/CanvasLayer/PanelContainer/Einde/Panel/SaveQuizPanel/VBoxContainer/backtomenu");
+		SaveQuiz = GetNode<Button>("Node/CanvasLayer/PanelContainer/Einde/Panel/SaveQuizPanel/VBoxContainer/Savequizz");
 
 		BackToMain.Pressed += OnBackToMenuButtonPressed;
+		SaveQuiz.Pressed += OnSaveQuizPressed;
 		
 		// Initialize score synchronization
 		 InitializeValueSync();
 
 		ShowOnlyActivePanel(0);
+		
+		SelectedQuizFilePath =((GameState)GetNode("/root/GameState")).SelectedQuizFilePath;
+		
+
+		if (!string.IsNullOrEmpty(SelectedQuizFilePath))
+			LoadQuizDataInUI(SelectedQuizFilePath);
+		else
+			GD.Print("Geen quizbestand opgegeven!");
 	}
 	
 	private void OnBackToMenuButtonPressed()
@@ -51,38 +75,59 @@ public partial class QuizTemplate : Node2D
 		GetTree().ChangeSceneToFile("res://scenes/MainMenu.tscn");
 	}
 	
-	private void SetEditMode(bool enabled)
+	private void OnSaveQuizPressed()
 	{
-		// Helper function to recursively process nodes
-		void ProcessNode(Node node)
+		  
+		string quizName = quizNameEdit != null && !string.IsNullOrWhiteSpace(quizNameEdit.Text) ? quizNameEdit.Text: "untitled_quiz";
+
+   		 QuizSaver.SaveQuiz(quizName, this);
+	}
+	
+
+	private void SetEditMode(bool enabled)
+{
+	void ProcessNode(Node node)
+	{
+		if (node is LineEdit lineEdit)
 		{
-			// Disable editing for LineEdit
-			if (node is LineEdit lineEdit)
+			lineEdit.Editable = enabled;
+			lineEdit.FocusMode = enabled ? Control.FocusModeEnum.All : Control.FocusModeEnum.None;
+			if (!enabled)
+				lineEdit.ReleaseFocus();
+		}
+		else if (node is TextEdit textEdit)
+		{
+			textEdit.Editable = enabled;
+			textEdit.FocusMode = enabled ? Control.FocusModeEnum.All : Control.FocusModeEnum.None;
+			if (!enabled)
+				textEdit.ReleaseFocus();
+		}
+		else if (node is Button button)
+		{
+			if (button is ImageUploadButton)
 			{
-				lineEdit.Editable = enabled;
+				button.Visible = enabled;
 			}
-			// Disable editing for TextEdit
-			else if (node is TextEdit textEdit)
+			// Example: Hide SaveButton and DeleteButton when not in edit mode
+			if (button.Name == "SaveButton" || button.Name == "DeleteButton")
 			{
-				textEdit.Editable = enabled;
+				button.Visible = enabled;
 			}
-			// Hide buttons with UploadImageButton script attached
-			else if (node is Button button)
-			{
-			// Check if ImageUploadButton script is attached
-				if (button is ImageUploadButton)
-				{
-   				 button.Visible = enabled;
-				}
-			}
-		// Recurse for all children
+		}
+		// Hide other controls by name or type if needed
+		if (node.Name == "slidervalues")
+		{
+			if (node is CanvasItem ci)
+				ci.Visible = enabled;
+		}
+
 		foreach (Node child in node.GetChildren())
 			ProcessNode(child);
 	}
 
-	// Start from this node (QuizTemplate) or a specific root if you want
 	ProcessNode(this);
 }
+
 
 
  // Recursive function to find all value_X LineEdits
@@ -171,7 +216,7 @@ public partial class QuizTemplate : Node2D
 	private void ShowQuiz()
 	{
 		// Voorbeeld: QR-code tonen met quiznaam
-		GenerateAndShowQRCode(quizData.Name);
+		//GenerateAndShowQRCode(quizData.Name);
 	}
 
 	private void GenerateAndShowQRCode(string text)
@@ -194,4 +239,142 @@ public partial class QuizTemplate : Node2D
 		// Opruimen
 		qrCode.Call("queue_free");
 	}
-}
+	
+private void LoadQuizDataInUI(string filePath)
+{
+	if (!FileAccess.FileExists(filePath))
+	{
+		GD.PrintErr($"Quizbestand niet gevonden: {filePath}");
+		return;
+	}
+
+	using var file = FileAccess.Open(filePath, FileAccess.ModeFlags.Read);
+	string jsonText = file.GetAsText();
+
+	var json = new Json();
+	var error = json.Parse(jsonText);
+	if (error != Error.Ok)
+	{
+		GD.PrintErr("Fout bij inlezen JSON: " + error.ToString());
+		return;
+	}
+
+	// Haal de root dictionary uit de JSON
+	var quizData = (Godot.Collections.Dictionary<string, Variant>)json.Data;
+
+	if (!quizData.ContainsKey("questions"))
+	{
+		GD.PrintErr("Quizdata bevat geen 'questions' veld!");
+		return;
+	}
+
+	// Haal de vragen array uit de dictionary
+	var questions = quizData["questions"].AsGodotArray();
+
+	for (int q = 0; q < questions.Count && q < 6; q++) // max 6 vragen
+	{
+		var questionDict = questions[q].AsGodotDictionary();
+
+		string vraagTextPad = $"Node/CanvasLayer/PanelContainer/Question_{q + 1}/Panel/GridContainer/QuestionText";
+		var vraagTextEdit = GetNodeOrNull<TextEdit>(vraagTextPad);
+		if (vraagTextEdit != null && questionDict.ContainsKey("text"))
+			vraagTextEdit.Text = questionDict["text"].AsString();
+
+		string vraagImagePad = $"Node/CanvasLayer/PanelContainer/Question_{q + 1}/Panel/GridContainer/QuestionImage";
+		var vraagImageRect = GetNodeOrNull<TextureRect>(vraagImagePad);
+		if (vraagImageRect != null && questionDict.ContainsKey("image"))
+		{
+			string imagePath = questionDict["image"].AsString();
+			if (!string.IsNullOrEmpty(imagePath))
+			{
+				var texture = GD.Load<Texture2D>(imagePath);
+				vraagImageRect.Texture = texture;
+			}
+			else
+			{
+				vraagImageRect.Texture = GD.Load<Texture2D>("res://Fotos/placeholder.png");
+			}
+		}
+
+		// Answers
+		if (questionDict.ContainsKey("answers"))
+		{
+			var answers = questionDict["answers"].AsGodotArray();
+
+			for (int a = 0; a < answers.Count && a < 6; a++) // max 6 answers per question
+			{
+				var answerDict = answers[a].AsGodotDictionary();
+
+				// Answer text
+				string answerTextPad = $"Node/CanvasLayer/PanelContainer/Answers_{q + 1}/Panel/VBoxContainer/AnswerText";
+				var answerTextEdit = GetNodeOrNull<TextEdit>(answerTextPad);
+				if (answerTextEdit != null && answerDict.ContainsKey("text"))
+					answerTextEdit.Text = answerDict["text"].AsString();
+
+				// Answer image
+				string answerImagePad = $"Node/CanvasLayer/PanelContainer/Answers_{q + 1}/Panel/VBoxContainer/AnswerImage";
+				var answerImageRect = GetNodeOrNull<TextureRect>(answerImagePad);
+				if (answerImageRect != null && answerDict.ContainsKey("image"))
+				{
+					string imagePath = answerDict["image"].AsString();
+					if (!string.IsNullOrEmpty(imagePath))
+						answerImageRect.Texture = GD.Load<Texture2D>(imagePath);
+					else
+						answerImageRect.Texture = GD.Load<Texture2D>("res://Fotos/placeholder.png");
+				}
+
+					// Options for this answer
+					if (answerDict.ContainsKey("options"))
+					{
+						var options = answerDict["options"].AsGodotArray();
+						for (int o = 0; o < options.Count && o < 4; o++) // max 4 options per answer
+						{
+							var optionDict = options[o].AsGodotDictionary();
+
+							string basePath = $"Node/CanvasLayer/PanelContainer/Answers_{q + 1}/Panel/GridContainer/Option_{o + 1}/";
+
+							// Title
+							var titleEdit = GetNodeOrNull<LineEdit>(basePath + "Title");
+							if (titleEdit != null && optionDict.ContainsKey("title"))
+								titleEdit.Text = optionDict["title"].AsString();
+
+							// Description
+							var descEdit = GetNodeOrNull<TextEdit>(basePath + "Description");
+							if (descEdit != null && optionDict.ContainsKey("description"))
+								descEdit.Text = optionDict["description"].AsString();
+
+							// Positive
+							var positiveEdit = GetNodeOrNull<LineEdit>(basePath + "GridContainer/Positive");
+							if (positiveEdit != null && optionDict.ContainsKey("positive"))
+								positiveEdit.Text = optionDict["positive"].AsString();
+
+							// Negative
+							var negativeEdit = GetNodeOrNull<LineEdit>(basePath + "GridContainer/Negative");
+							if (negativeEdit != null && optionDict.ContainsKey("negative"))
+								negativeEdit.Text = optionDict["negative"].AsString();
+
+							// value_1 to value_4
+							for (int v = 1; v <= 4; v++)
+							{
+								string valueKey = $"score_panel/values/value_{v}";
+								var valueEdit = GetNodeOrNull<LineEdit>(basePath + valueKey);
+								if (valueEdit != null && optionDict.ContainsKey(valueKey))
+									valueEdit.Text = optionDict[valueKey].AsString();
+							}
+
+							// Score1 to Score4 (assuming HSlider)
+							for (int s = 1; s <= 4; s++)
+							{
+						   	 string scoreKey = $"score_panel/sliders/Score{s}";
+						   	 var scoreSlider = GetNodeOrNull<HSlider>(basePath + scoreKey);
+						  	  if (scoreSlider != null && optionDict.ContainsKey(scoreKey))
+							 	   scoreSlider.Value = optionDict[scoreKey].AsDouble();
+							}
+						} // end options loop
+					} // end if options
+				} // end answers loop
+			} // end if answers
+		} // end questions loop
+	} // end method
+
+}	

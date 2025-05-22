@@ -1,6 +1,5 @@
-[gd_scene load_steps=57 format=3 uid="uid://btrg7tqgl7nki"]
+[gd_scene load_steps=58 format=3 uid="uid://btrg7tqgl7nki"]
 
-[ext_resource type="Script" path="res://scripts/AutoFontSize.cs" id="1_mxj7o"]
 [ext_resource type="Script" path="res://scripts/QuizTemplate.cs" id="1_ryush"]
 [ext_resource type="Script" path="res://scripts/QuizSaver.cs" id="2_270up"]
 [ext_resource type="Script" path="res://scripts/QRCodeGenerator.cs" id="2_c36mr"]
@@ -8,6 +7,7 @@
 [ext_resource type="Script" path="res://scripts/ImageUploadButton.cs" id="4_0e7jk"]
 [ext_resource type="Texture2D" uid="uid://bbgrjs12qm5w4" path="res://Textures/1x1.png" id="4_biah3"]
 [ext_resource type="Texture2D" uid="uid://blx1pr7wm7qap" path="res://Fotos/placeholder.png" id="4_lcceq"]
+[ext_resource type="Script" path="res://scripts/SliderLineEdit.cs" id="8_nq7e1"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_md15t"]
 bg_color = Color(0.945098, 0.976471, 0.984314, 1)
@@ -174,6 +174,69 @@ border_width_right = 2
 border_width_bottom = 2
 border_color = Color(0.266667, 0.447059, 0.768627, 1)
 
+[sub_resource type="CSharpScript" id="CSharpScript_dem0w"]
+script/source = "using Godot;
+
+[GlobalClass]
+public partial class AutoFontSize : Label
+{
+	[Export] public int FontSizeMin = 8;
+	[Export] public int FontSizeMax = 16;
+	[Export] public float FontSizeWidthPercent = 0.9f;
+	[Export] public bool AutoSizeOn = true;
+
+	private string _lastText = \"\";
+
+	public override void _Ready()
+	{
+		UpdateFontSize();
+	}
+
+	public override void _Notification(int what)
+	{
+		if (what == NotificationResized)
+		{
+			UpdateFontSize();
+		}
+	}
+
+	public override void _Process(double delta)
+	{
+		// Detect text changes (since Label doesn't emit a signal)
+		if (Text != _lastText)
+		{
+			_lastText = Text;
+			UpdateFontSize();
+		}
+	}
+
+	private void UpdateFontSize()
+	{
+		if (!AutoSizeOn)
+			return;
+
+		var font = GetThemeFont(\"font\");
+		if (font == null)
+			return;
+
+		int fontSize = FontSizeMax;
+		float availableWidth = Size.X * FontSizeWidthPercent;
+		float availableHeight = Size.Y;
+
+		while (fontSize >= FontSizeMin)
+		{
+			var textSize = font.GetStringSize(Text, HorizontalAlignment.Left, -1, fontSize);
+			if (textSize.X <= availableWidth && textSize.Y <= availableHeight)
+				break;
+
+			fontSize--;
+		}
+
+		AddThemeFontSizeOverride(\"font_size\", Mathf.Clamp(fontSize, FontSizeMin, FontSizeMax));
+	}
+}
+"
+
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_g2grs"]
 bg_color = Color(0.94902, 0.94902, 0.94902, 1)
 border_width_left = 5
@@ -251,9 +314,6 @@ script = ExtResource("1_ryush")
 
 [node name="Node" type="Node" parent="."]
 script = ExtResource("2_270up")
-PanelContainerPath = NodePath("CanvasLayer/PanelContainer")
-QuizTitleLineEditPath = NodePath("CanvasLayer/PanelContainer/Einde/Panel/SaveQuizPanel/VBoxContainer/Quiztitle")
-SaveButtonPath = NodePath("CanvasLayer/PanelContainer/Einde/Panel/SaveQuizPanel/VBoxContainer/Savequizz")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="Node"]
 
@@ -507,7 +567,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_42y0u")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_sssly")
 value = 16.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -519,7 +578,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_v6eoc")
 value = 100.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -531,7 +589,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_pu005")
 value = 50.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -543,7 +600,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_jqi3h")
 value = 66.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -641,37 +697,73 @@ anchor_left = 0.824
 anchor_top = -0.004
 anchor_right = 0.984
 anchor_bottom = 0.858
-offset_left = 10.28
-offset_top = 3.244
-offset_right = 1.47998
-offset_bottom = 4.66199
+offset_left = 6.28
+offset_top = -0.756
+offset_right = 6.47998
+offset_bottom = 9.66199
 grow_horizontal = 2
 theme_override_constants/separation = 2
 alignment = 1
 
-[node name="score_1" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_1/score_panel/slidervalues"]
+[node name="score_1" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_1/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 1"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score1")
 
-[node name="score_2" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_1/score_panel/slidervalues"]
+[node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_1/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 2"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score2")
 
-[node name="score_3" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_1/score_panel/slidervalues"]
+[node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_1/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 3"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score3")
 
-[node name="score_4" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_1/score_panel/slidervalues"]
+[node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_1/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 4"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_1"]
 layout_mode = 1
@@ -710,7 +802,11 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 15
 text = "+"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+FontSizeMin = null
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Positive" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_1/GridContainer"]
 layout_mode = 2
@@ -733,8 +829,11 @@ theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 27
 text = "-"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
 FontSizeMin = 13
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Negative" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_1/GridContainer"]
 layout_mode = 2
@@ -824,7 +923,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_42y0u")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_sssly")
 value = 16.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -836,7 +934,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_v6eoc")
 value = 100.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -848,7 +945,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_pu005")
 value = 50.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -860,7 +956,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_jqi3h")
 value = 66.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -958,37 +1053,73 @@ anchor_left = 0.824
 anchor_top = -0.004
 anchor_right = 0.984
 anchor_bottom = 0.858
-offset_left = 10.28
-offset_top = 3.244
-offset_right = 1.47998
-offset_bottom = 4.66199
+offset_left = 6.28
+offset_top = -0.756
+offset_right = 6.47998
+offset_bottom = 9.66199
 grow_horizontal = 2
 theme_override_constants/separation = 2
 alignment = 1
 
-[node name="score_1" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_2/score_panel/slidervalues"]
+[node name="score_1" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_2/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 1"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score1")
 
-[node name="score_2" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_2/score_panel/slidervalues"]
+[node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_2/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 2"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score2")
 
-[node name="score_3" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_2/score_panel/slidervalues"]
+[node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_2/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 3"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score3")
 
-[node name="score_4" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_2/score_panel/slidervalues"]
+[node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_2/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 4"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_2"]
 layout_mode = 1
@@ -1027,7 +1158,16 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 15
 text = "+"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(0, 0.917647, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 15
+FontSizeMin = null
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Positive" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_2/GridContainer"]
 layout_mode = 2
@@ -1050,8 +1190,16 @@ theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 27
 text = "-"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(1, 0, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 27
 FontSizeMin = 13
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Negative" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_2/GridContainer"]
 layout_mode = 2
@@ -1141,7 +1289,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_42y0u")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_sssly")
 value = 16.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -1153,7 +1300,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_v6eoc")
 value = 100.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -1165,7 +1311,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_pu005")
 value = 50.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -1177,7 +1322,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_jqi3h")
 value = 66.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -1275,37 +1419,73 @@ anchor_left = 0.824
 anchor_top = -0.004
 anchor_right = 0.984
 anchor_bottom = 0.858
-offset_left = 10.28
-offset_top = 3.244
-offset_right = 1.47998
-offset_bottom = 4.66199
+offset_left = 6.28
+offset_top = -0.756
+offset_right = 6.47998
+offset_bottom = 9.66199
 grow_horizontal = 2
 theme_override_constants/separation = 2
 alignment = 1
 
-[node name="score_1" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_3/score_panel/slidervalues"]
+[node name="score_1" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_3/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 1"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score1")
 
-[node name="score_2" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_3/score_panel/slidervalues"]
+[node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_3/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 2"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score2")
 
-[node name="score_3" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_3/score_panel/slidervalues"]
+[node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_3/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 3"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score3")
 
-[node name="score_4" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_3/score_panel/slidervalues"]
+[node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_3/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 4"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_3"]
 layout_mode = 1
@@ -1344,7 +1524,16 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 15
 text = "+"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(0, 0.917647, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 15
+FontSizeMin = null
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Positive" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_3/GridContainer"]
 layout_mode = 2
@@ -1367,8 +1556,16 @@ theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 27
 text = "-"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(1, 0, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 27
 FontSizeMin = 13
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Negative" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_3/GridContainer"]
 layout_mode = 2
@@ -1458,7 +1655,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_42y0u")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_sssly")
 value = 16.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -1470,7 +1666,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_v6eoc")
 value = 100.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -1482,7 +1677,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_pu005")
 value = 50.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -1494,7 +1688,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_jqi3h")
 value = 66.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -1592,37 +1785,73 @@ anchor_left = 0.824
 anchor_top = -0.004
 anchor_right = 0.984
 anchor_bottom = 0.858
-offset_left = 10.28
-offset_top = 3.244
-offset_right = 1.47998
-offset_bottom = 4.66199
+offset_left = 6.28
+offset_top = -0.756
+offset_right = 6.47998
+offset_bottom = 9.66199
 grow_horizontal = 2
 theme_override_constants/separation = 2
 alignment = 1
 
-[node name="score_1" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_4/score_panel/slidervalues"]
+[node name="score_1" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_4/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 1"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score1")
 
-[node name="score_2" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_4/score_panel/slidervalues"]
+[node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_4/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 2"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score2")
 
-[node name="score_3" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_4/score_panel/slidervalues"]
+[node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_4/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 3"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score3")
 
-[node name="score_4" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_4/score_panel/slidervalues"]
+[node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_4/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 4"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_4"]
 layout_mode = 1
@@ -1661,7 +1890,16 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 15
 text = "+"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(0, 0.917647, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 15
+FontSizeMin = null
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Positive" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_4/GridContainer"]
 layout_mode = 2
@@ -1684,8 +1922,16 @@ theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 27
 text = "-"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(1, 0, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 27
 FontSizeMin = 13
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Negative" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_4/GridContainer"]
 layout_mode = 2
@@ -1930,7 +2176,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_42y0u")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_sssly")
 value = 16.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -1942,7 +2187,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_v6eoc")
 value = 100.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -1954,7 +2198,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_pu005")
 value = 50.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -1966,7 +2209,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_jqi3h")
 value = 66.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -2064,37 +2306,73 @@ anchor_left = 0.824
 anchor_top = -0.004
 anchor_right = 0.984
 anchor_bottom = 0.858
-offset_left = 10.28
-offset_top = 3.244
-offset_right = 1.47998
-offset_bottom = 4.66199
+offset_left = 6.28
+offset_top = -0.756
+offset_right = 6.47998
+offset_bottom = 9.66199
 grow_horizontal = 2
 theme_override_constants/separation = 2
 alignment = 1
 
-[node name="score_1" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_1/score_panel/slidervalues"]
+[node name="score_1" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_1/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 1"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score1")
 
-[node name="score_2" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_1/score_panel/slidervalues"]
+[node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_1/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 2"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score2")
 
-[node name="score_3" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_1/score_panel/slidervalues"]
+[node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_1/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 3"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score3")
 
-[node name="score_4" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_1/score_panel/slidervalues"]
+[node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_1/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 4"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_1"]
 layout_mode = 1
@@ -2133,7 +2411,16 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 15
 text = "+"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(0, 0.917647, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 15
+FontSizeMin = null
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Positive" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_1/GridContainer"]
 layout_mode = 2
@@ -2156,8 +2443,16 @@ theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 27
 text = "-"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(1, 0, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 27
 FontSizeMin = 13
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Negative" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_1/GridContainer"]
 layout_mode = 2
@@ -2247,7 +2542,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_42y0u")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_sssly")
 value = 16.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -2259,7 +2553,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_v6eoc")
 value = 100.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -2271,7 +2564,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_pu005")
 value = 50.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -2283,7 +2575,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_jqi3h")
 value = 66.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -2381,37 +2672,73 @@ anchor_left = 0.824
 anchor_top = -0.004
 anchor_right = 0.984
 anchor_bottom = 0.858
-offset_left = 10.28
-offset_top = 3.244
-offset_right = 1.47998
-offset_bottom = 4.66199
+offset_left = 6.28
+offset_top = -0.756
+offset_right = 6.47998
+offset_bottom = 9.66199
 grow_horizontal = 2
 theme_override_constants/separation = 2
 alignment = 1
 
-[node name="score_1" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_2/score_panel/slidervalues"]
+[node name="score_1" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_2/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 1"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score1")
 
-[node name="score_2" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_2/score_panel/slidervalues"]
+[node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_2/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 2"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score2")
 
-[node name="score_3" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_2/score_panel/slidervalues"]
+[node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_2/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 3"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score3")
 
-[node name="score_4" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_2/score_panel/slidervalues"]
+[node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_2/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 4"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_2"]
 layout_mode = 1
@@ -2450,7 +2777,16 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 15
 text = "+"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(0, 0.917647, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 15
+FontSizeMin = null
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Positive" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_2/GridContainer"]
 layout_mode = 2
@@ -2473,8 +2809,16 @@ theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 27
 text = "-"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(1, 0, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 27
 FontSizeMin = 13
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Negative" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_2/GridContainer"]
 layout_mode = 2
@@ -2564,7 +2908,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_42y0u")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_sssly")
 value = 16.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -2576,7 +2919,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_v6eoc")
 value = 100.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -2588,7 +2930,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_pu005")
 value = 50.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -2600,7 +2941,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_jqi3h")
 value = 66.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -2698,37 +3038,73 @@ anchor_left = 0.824
 anchor_top = -0.004
 anchor_right = 0.984
 anchor_bottom = 0.858
-offset_left = 10.28
-offset_top = 3.244
-offset_right = 1.47998
-offset_bottom = 4.66199
+offset_left = 6.28
+offset_top = -0.756
+offset_right = 6.47998
+offset_bottom = 9.66199
 grow_horizontal = 2
 theme_override_constants/separation = 2
 alignment = 1
 
-[node name="score_1" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_3/score_panel/slidervalues"]
+[node name="score_1" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_3/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 1"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score1")
 
-[node name="score_2" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_3/score_panel/slidervalues"]
+[node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_3/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 2"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score2")
 
-[node name="score_3" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_3/score_panel/slidervalues"]
+[node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_3/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 3"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score3")
 
-[node name="score_4" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_3/score_panel/slidervalues"]
+[node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_3/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 4"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_3"]
 layout_mode = 1
@@ -2767,7 +3143,16 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 15
 text = "+"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(0, 0.917647, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 15
+FontSizeMin = null
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Positive" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_3/GridContainer"]
 layout_mode = 2
@@ -2790,8 +3175,16 @@ theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 27
 text = "-"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(1, 0, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 27
 FontSizeMin = 13
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Negative" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_3/GridContainer"]
 layout_mode = 2
@@ -2881,7 +3274,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_42y0u")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_sssly")
 value = 16.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -2893,7 +3285,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_v6eoc")
 value = 100.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -2905,7 +3296,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_pu005")
 value = 50.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -2917,7 +3307,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_jqi3h")
 value = 66.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -3015,37 +3404,73 @@ anchor_left = 0.824
 anchor_top = -0.004
 anchor_right = 0.984
 anchor_bottom = 0.858
-offset_left = 10.28
-offset_top = 3.244
-offset_right = 1.47998
-offset_bottom = 4.66199
+offset_left = 6.28
+offset_top = -0.756
+offset_right = 6.47998
+offset_bottom = 9.66199
 grow_horizontal = 2
 theme_override_constants/separation = 2
 alignment = 1
 
-[node name="score_1" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_4/score_panel/slidervalues"]
+[node name="score_1" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_4/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 1"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score1")
 
-[node name="score_2" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_4/score_panel/slidervalues"]
+[node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_4/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 2"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score2")
 
-[node name="score_3" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_4/score_panel/slidervalues"]
+[node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_4/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 3"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score3")
 
-[node name="score_4" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_4/score_panel/slidervalues"]
+[node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_4/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 4"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_4"]
 layout_mode = 1
@@ -3084,7 +3509,16 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 15
 text = "+"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(0, 0.917647, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 15
+FontSizeMin = null
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Positive" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_4/GridContainer"]
 layout_mode = 2
@@ -3107,8 +3541,16 @@ theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 27
 text = "-"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(1, 0, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 27
 FontSizeMin = 13
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Negative" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_4/GridContainer"]
 layout_mode = 2
@@ -3353,7 +3795,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_42y0u")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_sssly")
 value = 16.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -3365,7 +3806,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_v6eoc")
 value = 100.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -3377,7 +3817,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_pu005")
 value = 50.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -3389,7 +3828,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_jqi3h")
 value = 66.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -3487,37 +3925,73 @@ anchor_left = 0.824
 anchor_top = -0.004
 anchor_right = 0.984
 anchor_bottom = 0.858
-offset_left = 10.28
-offset_top = 3.244
-offset_right = 1.47998
-offset_bottom = 4.66199
+offset_left = 6.28
+offset_top = -0.756
+offset_right = 6.47998
+offset_bottom = 9.66199
 grow_horizontal = 2
 theme_override_constants/separation = 2
 alignment = 1
 
-[node name="score_1" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_1/score_panel/slidervalues"]
+[node name="score_1" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_1/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 1"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score1")
 
-[node name="score_2" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_1/score_panel/slidervalues"]
+[node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_1/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 2"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score2")
 
-[node name="score_3" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_1/score_panel/slidervalues"]
+[node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_1/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 3"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score3")
 
-[node name="score_4" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_1/score_panel/slidervalues"]
+[node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_1/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 4"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_1"]
 layout_mode = 1
@@ -3556,7 +4030,16 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 15
 text = "+"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(0, 0.917647, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 15
+FontSizeMin = null
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Positive" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_1/GridContainer"]
 layout_mode = 2
@@ -3579,8 +4062,16 @@ theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 27
 text = "-"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(1, 0, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 27
 FontSizeMin = 13
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Negative" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_1/GridContainer"]
 layout_mode = 2
@@ -3670,7 +4161,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_42y0u")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_sssly")
 value = 16.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -3682,7 +4172,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_v6eoc")
 value = 100.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -3694,7 +4183,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_pu005")
 value = 50.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -3706,7 +4194,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_jqi3h")
 value = 66.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -3804,37 +4291,73 @@ anchor_left = 0.824
 anchor_top = -0.004
 anchor_right = 0.984
 anchor_bottom = 0.858
-offset_left = 10.28
-offset_top = 3.244
-offset_right = 1.47998
-offset_bottom = 4.66199
+offset_left = 6.28
+offset_top = -0.756
+offset_right = 6.47998
+offset_bottom = 9.66199
 grow_horizontal = 2
 theme_override_constants/separation = 2
 alignment = 1
 
-[node name="score_1" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_2/score_panel/slidervalues"]
+[node name="score_1" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_2/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 1"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score1")
 
-[node name="score_2" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_2/score_panel/slidervalues"]
+[node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_2/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 2"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score2")
 
-[node name="score_3" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_2/score_panel/slidervalues"]
+[node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_2/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 3"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score3")
 
-[node name="score_4" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_2/score_panel/slidervalues"]
+[node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_2/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 4"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_2"]
 layout_mode = 1
@@ -3873,7 +4396,16 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 15
 text = "+"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(0, 0.917647, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 15
+FontSizeMin = null
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Positive" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_2/GridContainer"]
 layout_mode = 2
@@ -3896,8 +4428,16 @@ theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 27
 text = "-"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(1, 0, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 27
 FontSizeMin = 13
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Negative" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_2/GridContainer"]
 layout_mode = 2
@@ -3987,7 +4527,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_42y0u")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_sssly")
 value = 16.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -3999,7 +4538,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_v6eoc")
 value = 100.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -4011,7 +4549,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_pu005")
 value = 50.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -4023,7 +4560,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_jqi3h")
 value = 66.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -4121,37 +4657,73 @@ anchor_left = 0.824
 anchor_top = -0.004
 anchor_right = 0.984
 anchor_bottom = 0.858
-offset_left = 10.28
-offset_top = 3.244
-offset_right = 1.47998
-offset_bottom = 4.66199
+offset_left = 6.28
+offset_top = -0.756
+offset_right = 6.47998
+offset_bottom = 9.66199
 grow_horizontal = 2
 theme_override_constants/separation = 2
 alignment = 1
 
-[node name="score_1" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_3/score_panel/slidervalues"]
+[node name="score_1" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_3/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 1"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score1")
 
-[node name="score_2" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_3/score_panel/slidervalues"]
+[node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_3/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 2"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score2")
 
-[node name="score_3" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_3/score_panel/slidervalues"]
+[node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_3/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 3"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score3")
 
-[node name="score_4" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_3/score_panel/slidervalues"]
+[node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_3/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 4"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_3"]
 layout_mode = 1
@@ -4190,7 +4762,16 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 15
 text = "+"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(0, 0.917647, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 15
+FontSizeMin = null
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Positive" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_3/GridContainer"]
 layout_mode = 2
@@ -4213,8 +4794,16 @@ theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 27
 text = "-"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(1, 0, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 27
 FontSizeMin = 13
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Negative" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_3/GridContainer"]
 layout_mode = 2
@@ -4304,7 +4893,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_42y0u")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_sssly")
 value = 16.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -4316,7 +4904,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_v6eoc")
 value = 100.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -4328,7 +4915,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_pu005")
 value = 50.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -4340,7 +4926,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_jqi3h")
 value = 66.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -4438,37 +5023,73 @@ anchor_left = 0.824
 anchor_top = -0.004
 anchor_right = 0.984
 anchor_bottom = 0.858
-offset_left = 10.28
-offset_top = 3.244
-offset_right = 1.47998
-offset_bottom = 4.66199
+offset_left = 6.28
+offset_top = -0.756
+offset_right = 6.47998
+offset_bottom = 9.66199
 grow_horizontal = 2
 theme_override_constants/separation = 2
 alignment = 1
 
-[node name="score_1" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_4/score_panel/slidervalues"]
+[node name="score_1" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_4/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 1"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score1")
 
-[node name="score_2" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_4/score_panel/slidervalues"]
+[node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_4/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 2"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score2")
 
-[node name="score_3" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_4/score_panel/slidervalues"]
+[node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_4/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 3"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score3")
 
-[node name="score_4" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_4/score_panel/slidervalues"]
+[node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_4/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 4"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_4"]
 layout_mode = 1
@@ -4507,7 +5128,16 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 15
 text = "+"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(0, 0.917647, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 15
+FontSizeMin = null
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Positive" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_4/GridContainer"]
 layout_mode = 2
@@ -4530,8 +5160,16 @@ theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 27
 text = "-"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(1, 0, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 27
 FontSizeMin = 13
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Negative" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_4/GridContainer"]
 layout_mode = 2
@@ -4776,7 +5414,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_42y0u")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_sssly")
 value = 16.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -4788,7 +5425,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_v6eoc")
 value = 100.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -4800,7 +5436,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_pu005")
 value = 50.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -4812,7 +5447,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_jqi3h")
 value = 66.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -4910,37 +5544,73 @@ anchor_left = 0.824
 anchor_top = -0.004
 anchor_right = 0.984
 anchor_bottom = 0.858
-offset_left = 10.28
-offset_top = 3.244
-offset_right = 1.47998
-offset_bottom = 4.66199
+offset_left = 6.28
+offset_top = -0.756
+offset_right = 6.47998
+offset_bottom = 9.66199
 grow_horizontal = 2
 theme_override_constants/separation = 2
 alignment = 1
 
-[node name="score_1" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_1/score_panel/slidervalues"]
+[node name="score_1" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_1/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 1"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score1")
 
-[node name="score_2" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_1/score_panel/slidervalues"]
+[node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_1/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 2"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score2")
 
-[node name="score_3" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_1/score_panel/slidervalues"]
+[node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_1/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 3"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score3")
 
-[node name="score_4" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_1/score_panel/slidervalues"]
+[node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_1/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 4"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_1"]
 layout_mode = 1
@@ -4979,7 +5649,16 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 15
 text = "+"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(0, 0.917647, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 15
+FontSizeMin = null
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Positive" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_1/GridContainer"]
 layout_mode = 2
@@ -5002,8 +5681,16 @@ theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 27
 text = "-"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(1, 0, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 27
 FontSizeMin = 13
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Negative" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_1/GridContainer"]
 layout_mode = 2
@@ -5093,7 +5780,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_42y0u")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_sssly")
 value = 16.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -5105,7 +5791,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_v6eoc")
 value = 100.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -5117,7 +5802,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_pu005")
 value = 50.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -5129,7 +5813,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_jqi3h")
 value = 66.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -5227,37 +5910,73 @@ anchor_left = 0.824
 anchor_top = -0.004
 anchor_right = 0.984
 anchor_bottom = 0.858
-offset_left = 10.28
-offset_top = 3.244
-offset_right = 1.47998
-offset_bottom = 4.66199
+offset_left = 6.28
+offset_top = -0.756
+offset_right = 6.47998
+offset_bottom = 9.66199
 grow_horizontal = 2
 theme_override_constants/separation = 2
 alignment = 1
 
-[node name="score_1" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_2/score_panel/slidervalues"]
+[node name="score_1" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_2/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 1"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score1")
 
-[node name="score_2" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_2/score_panel/slidervalues"]
+[node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_2/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 2"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score2")
 
-[node name="score_3" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_2/score_panel/slidervalues"]
+[node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_2/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 3"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score3")
 
-[node name="score_4" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_2/score_panel/slidervalues"]
+[node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_2/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 4"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_2"]
 layout_mode = 1
@@ -5296,7 +6015,16 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 15
 text = "+"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(0, 0.917647, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 15
+FontSizeMin = null
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Positive" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_2/GridContainer"]
 layout_mode = 2
@@ -5319,8 +6047,16 @@ theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 27
 text = "-"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(1, 0, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 27
 FontSizeMin = 13
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Negative" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_2/GridContainer"]
 layout_mode = 2
@@ -5410,7 +6146,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_42y0u")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_sssly")
 value = 16.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -5422,7 +6157,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_v6eoc")
 value = 100.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -5434,7 +6168,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_pu005")
 value = 50.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -5446,7 +6179,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_jqi3h")
 value = 66.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -5544,37 +6276,73 @@ anchor_left = 0.824
 anchor_top = -0.004
 anchor_right = 0.984
 anchor_bottom = 0.858
-offset_left = 10.28
-offset_top = 3.244
-offset_right = 1.47998
-offset_bottom = 4.66199
+offset_left = 6.28
+offset_top = -0.756
+offset_right = 6.47998
+offset_bottom = 9.66199
 grow_horizontal = 2
 theme_override_constants/separation = 2
 alignment = 1
 
-[node name="score_1" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_3/score_panel/slidervalues"]
+[node name="score_1" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_3/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 1"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score1")
 
-[node name="score_2" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_3/score_panel/slidervalues"]
+[node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_3/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 2"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score2")
 
-[node name="score_3" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_3/score_panel/slidervalues"]
+[node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_3/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 3"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score3")
 
-[node name="score_4" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_3/score_panel/slidervalues"]
+[node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_3/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 4"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_3"]
 layout_mode = 1
@@ -5613,7 +6381,16 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 15
 text = "+"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(0, 0.917647, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 15
+FontSizeMin = null
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Positive" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_3/GridContainer"]
 layout_mode = 2
@@ -5636,8 +6413,16 @@ theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 27
 text = "-"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(1, 0, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 27
 FontSizeMin = 13
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Negative" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_3/GridContainer"]
 layout_mode = 2
@@ -5727,7 +6512,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_42y0u")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_sssly")
 value = 16.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -5739,7 +6523,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_v6eoc")
 value = 100.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -5751,7 +6534,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_pu005")
 value = 50.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -5763,7 +6545,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_jqi3h")
 value = 66.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -5861,37 +6642,73 @@ anchor_left = 0.824
 anchor_top = -0.004
 anchor_right = 0.984
 anchor_bottom = 0.858
-offset_left = 10.28
-offset_top = 3.244
-offset_right = 1.47998
-offset_bottom = 4.66199
+offset_left = 6.28
+offset_top = -0.756
+offset_right = 6.47998
+offset_bottom = 9.66199
 grow_horizontal = 2
 theme_override_constants/separation = 2
 alignment = 1
 
-[node name="score_1" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_4/score_panel/slidervalues"]
+[node name="score_1" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_4/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 1"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score1")
 
-[node name="score_2" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_4/score_panel/slidervalues"]
+[node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_4/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 2"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score2")
 
-[node name="score_3" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_4/score_panel/slidervalues"]
+[node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_4/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 3"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score3")
 
-[node name="score_4" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_4/score_panel/slidervalues"]
+[node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_4/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 4"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_4"]
 layout_mode = 1
@@ -5930,7 +6747,16 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 15
 text = "+"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(0, 0.917647, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 15
+FontSizeMin = null
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Positive" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_4/GridContainer"]
 layout_mode = 2
@@ -5953,8 +6779,16 @@ theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 27
 text = "-"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(1, 0, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 27
 FontSizeMin = 13
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Negative" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_4/GridContainer"]
 layout_mode = 2
@@ -6199,7 +7033,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_42y0u")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_sssly")
 value = 16.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -6211,7 +7044,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_v6eoc")
 value = 100.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -6223,7 +7055,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_pu005")
 value = 50.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -6235,7 +7066,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_jqi3h")
 value = 66.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -6333,37 +7163,73 @@ anchor_left = 0.824
 anchor_top = -0.004
 anchor_right = 0.984
 anchor_bottom = 0.858
-offset_left = 10.28
-offset_top = 3.244
-offset_right = 1.47998
-offset_bottom = 4.66199
+offset_left = 6.28
+offset_top = -0.756
+offset_right = 6.47998
+offset_bottom = 9.66199
 grow_horizontal = 2
 theme_override_constants/separation = 2
 alignment = 1
 
-[node name="score_1" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_1/score_panel/slidervalues"]
+[node name="score_1" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_1/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 1"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score1")
 
-[node name="score_2" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_1/score_panel/slidervalues"]
+[node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_1/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 2"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score2")
 
-[node name="score_3" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_1/score_panel/slidervalues"]
+[node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_1/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 3"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score3")
 
-[node name="score_4" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_1/score_panel/slidervalues"]
+[node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_1/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 4"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_1"]
 layout_mode = 1
@@ -6402,7 +7268,16 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 15
 text = "+"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(0, 0.917647, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 15
+FontSizeMin = null
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Positive" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_1/GridContainer"]
 layout_mode = 2
@@ -6425,8 +7300,16 @@ theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 27
 text = "-"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(1, 0, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 27
 FontSizeMin = 13
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Negative" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_1/GridContainer"]
 layout_mode = 2
@@ -6516,7 +7399,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_42y0u")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_sssly")
 value = 16.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -6528,7 +7410,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_v6eoc")
 value = 100.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -6540,7 +7421,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_pu005")
 value = 50.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -6552,7 +7432,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_jqi3h")
 value = 66.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -6650,37 +7529,73 @@ anchor_left = 0.824
 anchor_top = -0.004
 anchor_right = 0.984
 anchor_bottom = 0.858
-offset_left = 10.28
-offset_top = 3.244
-offset_right = 1.47998
-offset_bottom = 4.66199
+offset_left = 6.28
+offset_top = -0.756
+offset_right = 6.47998
+offset_bottom = 9.66199
 grow_horizontal = 2
 theme_override_constants/separation = 2
 alignment = 1
 
-[node name="score_1" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_2/score_panel/slidervalues"]
+[node name="score_1" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_2/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 1"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score1")
 
-[node name="score_2" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_2/score_panel/slidervalues"]
+[node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_2/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 2"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score2")
 
-[node name="score_3" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_2/score_panel/slidervalues"]
+[node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_2/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 3"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score3")
 
-[node name="score_4" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_2/score_panel/slidervalues"]
+[node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_2/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 4"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_2"]
 layout_mode = 1
@@ -6719,7 +7634,16 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 15
 text = "+"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(0, 0.917647, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 15
+FontSizeMin = null
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Positive" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_2/GridContainer"]
 layout_mode = 2
@@ -6742,8 +7666,16 @@ theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 27
 text = "-"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(1, 0, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 27
 FontSizeMin = 13
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Negative" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_2/GridContainer"]
 layout_mode = 2
@@ -6833,7 +7765,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_42y0u")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_sssly")
 value = 16.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -6845,7 +7776,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_v6eoc")
 value = 100.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -6857,7 +7787,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_pu005")
 value = 50.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -6869,7 +7798,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_jqi3h")
 value = 66.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -6967,37 +7895,73 @@ anchor_left = 0.824
 anchor_top = -0.004
 anchor_right = 0.984
 anchor_bottom = 0.858
-offset_left = 10.28
-offset_top = 3.244
-offset_right = 1.47998
-offset_bottom = 4.66199
+offset_left = 6.28
+offset_top = -0.756
+offset_right = 6.47998
+offset_bottom = 9.66199
 grow_horizontal = 2
 theme_override_constants/separation = 2
 alignment = 1
 
-[node name="score_1" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_3/score_panel/slidervalues"]
+[node name="score_1" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_3/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 1"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score1")
 
-[node name="score_2" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_3/score_panel/slidervalues"]
+[node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_3/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 2"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score2")
 
-[node name="score_3" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_3/score_panel/slidervalues"]
+[node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_3/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 3"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score3")
 
-[node name="score_4" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_3/score_panel/slidervalues"]
+[node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_3/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 4"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_3"]
 layout_mode = 1
@@ -7036,7 +8000,16 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 15
 text = "+"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(0, 0.917647, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 15
+FontSizeMin = null
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Positive" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_3/GridContainer"]
 layout_mode = 2
@@ -7059,8 +8032,16 @@ theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 27
 text = "-"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(1, 0, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 27
 FontSizeMin = 13
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Negative" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_3/GridContainer"]
 layout_mode = 2
@@ -7150,7 +8131,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_42y0u")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_sssly")
 value = 16.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -7162,7 +8142,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_v6eoc")
 value = 100.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -7174,7 +8153,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_pu005")
 value = 50.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -7186,7 +8164,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_jqi3h")
 value = 66.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -7284,37 +8261,73 @@ anchor_left = 0.824
 anchor_top = -0.004
 anchor_right = 0.984
 anchor_bottom = 0.858
-offset_left = 10.28
-offset_top = 3.244
-offset_right = 1.47998
-offset_bottom = 4.66199
+offset_left = 6.28
+offset_top = -0.756
+offset_right = 6.47998
+offset_bottom = 9.66199
 grow_horizontal = 2
 theme_override_constants/separation = 2
 alignment = 1
 
-[node name="score_1" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_4/score_panel/slidervalues"]
+[node name="score_1" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_4/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 1"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score1")
 
-[node name="score_2" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_4/score_panel/slidervalues"]
+[node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_4/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 2"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score2")
 
-[node name="score_3" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_4/score_panel/slidervalues"]
+[node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_4/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 3"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score3")
 
-[node name="score_4" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_4/score_panel/slidervalues"]
+[node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_4/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 4"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_4"]
 layout_mode = 1
@@ -7353,7 +8366,16 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 15
 text = "+"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(0, 0.917647, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 15
+FontSizeMin = null
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Positive" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_4/GridContainer"]
 layout_mode = 2
@@ -7376,8 +8398,16 @@ theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 27
 text = "-"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(1, 0, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 27
 FontSizeMin = 13
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Negative" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_4/GridContainer"]
 layout_mode = 2
@@ -7622,7 +8652,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_42y0u")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_sssly")
 value = 16.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -7634,7 +8663,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_v6eoc")
 value = 100.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -7646,7 +8674,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_pu005")
 value = 50.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -7658,7 +8685,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_jqi3h")
 value = 66.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -7756,37 +8782,73 @@ anchor_left = 0.824
 anchor_top = -0.004
 anchor_right = 0.984
 anchor_bottom = 0.858
-offset_left = 10.28
-offset_top = 3.244
-offset_right = 1.47998
-offset_bottom = 4.66199
+offset_left = 6.28
+offset_top = -0.756
+offset_right = 6.47998
+offset_bottom = 9.66199
 grow_horizontal = 2
 theme_override_constants/separation = 2
 alignment = 1
 
-[node name="score_1" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_1/score_panel/slidervalues"]
+[node name="score_1" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_1/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 1"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score1")
 
-[node name="score_2" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_1/score_panel/slidervalues"]
+[node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_1/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 2"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score2")
 
-[node name="score_3" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_1/score_panel/slidervalues"]
+[node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_1/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 3"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score3")
 
-[node name="score_4" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_1/score_panel/slidervalues"]
+[node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_1/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 4"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_1"]
 layout_mode = 1
@@ -7825,7 +8887,16 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 15
 text = "+"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(0, 0.917647, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 15
+FontSizeMin = null
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Positive" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_1/GridContainer"]
 layout_mode = 2
@@ -7848,8 +8919,16 @@ theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 27
 text = "-"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(1, 0, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 27
 FontSizeMin = 13
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Negative" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_1/GridContainer"]
 layout_mode = 2
@@ -7939,7 +9018,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_42y0u")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_sssly")
 value = 16.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -7951,7 +9029,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_v6eoc")
 value = 100.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -7963,7 +9040,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_pu005")
 value = 50.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -7975,7 +9051,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_jqi3h")
 value = 66.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -8073,37 +9148,73 @@ anchor_left = 0.824
 anchor_top = -0.004
 anchor_right = 0.984
 anchor_bottom = 0.858
-offset_left = 10.28
-offset_top = 3.244
-offset_right = 1.47998
-offset_bottom = 4.66199
+offset_left = 6.28
+offset_top = -0.756
+offset_right = 6.47998
+offset_bottom = 9.66199
 grow_horizontal = 2
 theme_override_constants/separation = 2
 alignment = 1
 
-[node name="score_1" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_2/score_panel/slidervalues"]
+[node name="score_1" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_2/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 1"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score1")
 
-[node name="score_2" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_2/score_panel/slidervalues"]
+[node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_2/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 2"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score2")
 
-[node name="score_3" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_2/score_panel/slidervalues"]
+[node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_2/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 3"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score3")
 
-[node name="score_4" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_2/score_panel/slidervalues"]
+[node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_2/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 4"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_2"]
 layout_mode = 1
@@ -8142,7 +9253,16 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 15
 text = "+"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(0, 0.917647, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 15
+FontSizeMin = null
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Positive" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_2/GridContainer"]
 layout_mode = 2
@@ -8165,8 +9285,16 @@ theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 27
 text = "-"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(1, 0, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 27
 FontSizeMin = 13
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Negative" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_2/GridContainer"]
 layout_mode = 2
@@ -8256,7 +9384,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_42y0u")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_sssly")
 value = 16.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -8268,7 +9395,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_v6eoc")
 value = 100.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -8280,7 +9406,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_pu005")
 value = 50.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -8292,7 +9417,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_jqi3h")
 value = 66.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -8390,37 +9514,73 @@ anchor_left = 0.824
 anchor_top = -0.004
 anchor_right = 0.984
 anchor_bottom = 0.858
-offset_left = 10.28
-offset_top = 3.244
-offset_right = 1.47998
-offset_bottom = 4.66199
+offset_left = 6.28
+offset_top = -0.756
+offset_right = 6.47998
+offset_bottom = 9.66199
 grow_horizontal = 2
 theme_override_constants/separation = 2
 alignment = 1
 
-[node name="score_1" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_3/score_panel/slidervalues"]
+[node name="score_1" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_3/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 1"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score1")
 
-[node name="score_2" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_3/score_panel/slidervalues"]
+[node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_3/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 2"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score2")
 
-[node name="score_3" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_3/score_panel/slidervalues"]
+[node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_3/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 3"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score3")
 
-[node name="score_4" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_3/score_panel/slidervalues"]
+[node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_3/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 4"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_3"]
 layout_mode = 1
@@ -8459,7 +9619,16 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 15
 text = "+"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(0, 0.917647, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 15
+FontSizeMin = null
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Positive" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_3/GridContainer"]
 layout_mode = 2
@@ -8482,8 +9651,16 @@ theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 27
 text = "-"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(1, 0, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 27
 FontSizeMin = 13
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Negative" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_3/GridContainer"]
 layout_mode = 2
@@ -8573,7 +9750,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_42y0u")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_sssly")
 value = 16.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -8585,7 +9761,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_v6eoc")
 value = 100.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -8597,7 +9772,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_pu005")
 value = 50.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -8609,7 +9783,6 @@ theme_override_icons/grabber_disabled = SubResource("ImageTexture_lm4q4")
 theme_override_styles/slider = SubResource("StyleBoxFlat_lka51")
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_jqi3h")
 value = 66.0
-editable = false
 tick_count = 1
 ticks_on_borders = true
 
@@ -8707,37 +9880,73 @@ anchor_left = 0.824
 anchor_top = -0.004
 anchor_right = 0.984
 anchor_bottom = 0.858
-offset_left = 10.28
-offset_top = 3.244
-offset_right = 1.47998
-offset_bottom = 4.66199
+offset_left = 6.28
+offset_top = -0.756
+offset_right = 6.47998
+offset_bottom = 9.66199
 grow_horizontal = 2
 theme_override_constants/separation = 2
 alignment = 1
 
-[node name="score_1" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_4/score_panel/slidervalues"]
+[node name="score_1" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_4/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 1"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score1")
 
-[node name="score_2" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_4/score_panel/slidervalues"]
+[node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_4/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 2"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score2")
 
-[node name="score_3" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_4/score_panel/slidervalues"]
+[node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_4/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 3"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score3")
 
-[node name="score_4" type="Label" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_4/score_panel/slidervalues"]
+[node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_4/score_panel/slidervalues"]
 layout_mode = 2
-size_flags_vertical = 0
-size_flags_stretch_ratio = 2.29
-theme_override_font_sizes/font_size = 8
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 10
+theme_override_styles/focus = SubResource("StyleBoxFlat_cgmim")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
+theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
+placeholder_text = "slider 4"
+expand_to_text_length = true
+script = ExtResource("8_nq7e1")
+SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_4"]
 layout_mode = 1
@@ -8776,7 +9985,16 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 15
 text = "+"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(0, 0.917647, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 15
+FontSizeMin = null
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Positive" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_4/GridContainer"]
 layout_mode = 2
@@ -8799,8 +10017,16 @@ theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
 theme_override_fonts/font = ExtResource("3_q431c")
 theme_override_font_sizes/font_size = 27
 text = "-"
-script = ExtResource("1_mxj7o")
+script = SubResource("CSharpScript_dem0w")
+theme_override_colors/font_color = Color(1, 0, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(1, 0, 0, 1)
+theme_override_fonts/font = ExtResource("3_q431c")
+theme_override_font_sizes/font_size = 27
 FontSizeMin = 13
+FontSizeMax = null
+FontSizeWidthPercent = null
+AutoSizeOn = null
 
 [node name="Negative" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_4/GridContainer"]
 layout_mode = 2
@@ -8852,6 +10078,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_ebnkd")
 placeholder_text = "Beschrijving"
 
 [node name="Einde" type="Panel" parent="Node/CanvasLayer/PanelContainer"]
+visible = false
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_md15t")
 
