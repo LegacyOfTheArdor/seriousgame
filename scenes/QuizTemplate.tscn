@@ -1,13 +1,102 @@
-[gd_scene load_steps=58 format=3 uid="uid://btrg7tqgl7nki"]
+[gd_scene load_steps=57 format=3 uid="uid://btrg7tqgl7nki"]
 
-[ext_resource type="Script" path="res://scripts/QuizTemplate.cs" id="1_ryush"]
-[ext_resource type="Script" path="res://scripts/QuizSaver.cs" id="2_270up"]
-[ext_resource type="Script" path="res://scripts/QRCodeGenerator.cs" id="2_c36mr"]
+[ext_resource type="Script" path="res://scripts/QuizTemplate.gd" id="1_3x4j7"]
 [ext_resource type="FontFile" uid="uid://bp6kmo3o2pvcv" path="res://fonts/OpenSans-Regular.ttf" id="3_q431c"]
-[ext_resource type="Script" path="res://scripts/ImageUploadButton.cs" id="4_0e7jk"]
 [ext_resource type="Texture2D" uid="uid://bbgrjs12qm5w4" path="res://Textures/1x1.png" id="4_biah3"]
+[ext_resource type="Script" path="res://scripts/ImageUploadButton.gd" id="4_hln5t"]
 [ext_resource type="Texture2D" uid="uid://blx1pr7wm7qap" path="res://Fotos/placeholder.png" id="4_lcceq"]
-[ext_resource type="Script" path="res://scripts/SliderLineEdit.cs" id="8_nq7e1"]
+
+[sub_resource type="CSharpScript" id="CSharpScript_3kojn"]
+script/source = "using Godot;
+using System.Collections.Generic;
+using System.Text.Json;
+
+public partial class QuizSaver : Node
+{
+	public static void SaveQuiz(string quizName, Node quizRoot)
+	{
+		string dirPath = \"user://seriousgame/quizzes\";
+		string absDirPath = ProjectSettings.GlobalizePath(dirPath);
+
+		if (!DirAccess.DirExistsAbsolute(absDirPath))
+			DirAccess.MakeDirRecursiveAbsolute(absDirPath);
+
+		string filePath = $\"{dirPath}/{quizName}.json\";
+
+		QuizData quizData = new();
+
+		for (int q = 1; q <= 6; q++)
+		{
+			// Get question text and image
+			string questionTextPath = $\"Node/CanvasLayer/PanelContainer/Question_{q}/Panel/GridContainer/QuestionText\";
+			string questionImagePath = $\"Node/CanvasLayer/PanelContainer/Question_{q}/Panel/GridContainer/QuestionImage\";
+			var questionTextEdit = quizRoot.GetNodeOrNull<TextEdit>(questionTextPath);
+			var questionImageNode = quizRoot.GetNodeOrNull<TextureRect>(questionImagePath);
+
+			if (questionTextEdit == null) continue;
+
+			QuestionData question = new()
+			{
+				text = questionTextEdit.Text,
+				image = (questionImageNode != null && questionImageNode.Texture != null) ? questionImageNode.Texture.ResourcePath : \"\"
+			};
+
+			// 6 answers per question
+			for (int a = 1; a <= 6; a++)
+			{
+				string answerTextPath = $\"Node/CanvasLayer/PanelContainer/Answers_{q}/Panel/VBoxContainer/AnswerText\";
+				string answerImagePath = $\"Node/CanvasLayer/PanelContainer/Answers_{q}/Panel/VBoxContainer/AnswerImage\";
+				var answerTextEdit = quizRoot.GetNodeOrNull<TextEdit>(answerTextPath);
+				var answerImageNode = quizRoot.GetNodeOrNull<TextureRect>(answerImagePath);
+
+				if (answerTextEdit == null) continue;
+
+				AnswerData answer = new()
+				{
+					text = answerTextEdit.Text,
+					image = (answerImageNode != null && answerImageNode.Texture != null) ? answerImageNode.Texture.ResourcePath : \"\"
+				};
+
+				// 4 options per answer
+				for (int o = 1; o <= 4; o++)
+				{
+					string basePath = $\"Node/CanvasLayer/PanelContainer/Answers_{q}/Panel/GridContainer/Option_{0}/\";
+					var option = new OptionData
+					{
+						title = quizRoot.GetNodeOrNull<LineEdit>(basePath + \"Title\")?.Text ?? \"\",
+						description = quizRoot.GetNodeOrNull<TextEdit>(basePath + \"Description\")?.Text ?? \"\",
+						positive = quizRoot.GetNodeOrNull<LineEdit>(basePath + \"GridContainer/Positive\")?.Text ?? \"\",
+						negative = quizRoot.GetNodeOrNull<LineEdit>(basePath + \"GridContainer/Negative\")?.Text ?? \"\",
+						value_1 = quizRoot.GetNodeOrNull<LineEdit>(basePath + \"score_panel/values/value_1\")?.Text ?? \"\",
+						value_2 = quizRoot.GetNodeOrNull<LineEdit>(basePath + \"score_panel/values/value_2\")?.Text ?? \"\",
+						value_3 = quizRoot.GetNodeOrNull<LineEdit>(basePath + \"score_panel/values/value_3\")?.Text ?? \"\",
+						value_4 = quizRoot.GetNodeOrNull<LineEdit>(basePath + \"score_panel/values/value_4\")?.Text ?? \"\",
+						score1 = quizRoot.GetNodeOrNull<Slider>(basePath + \"score_panel/sliders/score1\")?.Value ?? 0.0,
+						score2 = quizRoot.GetNodeOrNull<Slider>(basePath + \"score_panel/sliders/score2\")?.Value ?? 0.0,
+						score3 = quizRoot.GetNodeOrNull<Slider>(basePath + \"score_panel/sliders/score3\")?.Value ?? 0.0,
+						score4 = quizRoot.GetNodeOrNull<Slider>(basePath + \"score_panel/sliders/score4\")?.Value ?? 0.0
+					};
+					answer.options.Add(option);
+				}
+
+				question.answers.Add(answer);
+			}
+
+			quizData.questions.Add(question);
+		}
+
+
+		var options = new JsonSerializerOptions { WriteIndented = true };
+		string json = JsonSerializer.Serialize(quizData, options);
+
+		using var file = FileAccess.Open(filePath, FileAccess.ModeFlags.Write);
+		file.StoreString(json);
+		file.Close();
+
+		GD.Print($\"Quiz saved to {filePath}\");
+	}
+}
+"
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_md15t"]
 bg_color = Color(0.945098, 0.976471, 0.984314, 1)
@@ -174,6 +263,54 @@ border_width_right = 2
 border_width_bottom = 2
 border_color = Color(0.266667, 0.447059, 0.768627, 1)
 
+[sub_resource type="CSharpScript" id="CSharpScript_0rxr1"]
+script/source = "using Godot;
+
+public partial class SliderLineEdit : LineEdit
+{
+	[Export] public NodePath SliderPath { get; set; }
+
+	private HSlider _slider;
+
+	public override void _Ready()
+	{
+		// Get the slider node using the exported NodePath
+		if (!string.IsNullOrEmpty(SliderPath))
+		{
+			_slider = GetNode<HSlider>(SliderPath);
+
+			// Set the LineEdit text to the slider's current value at startup
+			Text = ((int)_slider.Value).ToString();
+
+			// Connect slider's value_changed to update this LineEdit
+			_slider.ValueChanged += OnSliderValueChanged;
+		}
+
+		// Connect LineEdit's text_changed to update the slider
+		TextChanged += OnLineEditTextChanged;
+	}
+
+	private void OnSliderValueChanged(double value)
+	{
+		// Update LineEdit when the slider changes
+		string valueStr = ((int)value).ToString();
+		if (Text != valueStr)
+			Text = valueStr;
+	}
+
+	private void OnLineEditTextChanged(string text)
+	{
+		// Update slider when the LineEdit changes, if input is valid
+		if (_slider != null && int.TryParse(text, out int val))
+		{
+			val = Mathf.Clamp(val, (int)_slider.MinValue, (int)_slider.MaxValue);
+			if ((int)_slider.Value != val)
+				_slider.Value = val;
+		}
+	}
+}
+"
+
 [sub_resource type="CSharpScript" id="CSharpScript_dem0w"]
 script/source = "using Godot;
 
@@ -310,10 +447,10 @@ border_width_bottom = 5
 border_color = Color(0.266667, 0.447059, 0.768627, 1)
 
 [node name="QuizTemplate" type="Node2D"]
-script = ExtResource("1_ryush")
+script = ExtResource("1_3x4j7")
 
 [node name="Node" type="Node" parent="."]
-script = ExtResource("2_270up")
+script = SubResource("CSharpScript_3kojn")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="Node"]
 
@@ -351,14 +488,11 @@ offset_bottom = 1.28802
 columns = 2
 
 [node name="QRCodeTexture" type="TextureRect" parent="Node/CanvasLayer/PanelContainer/verbinding/Panel/GridContainer"]
-modulate = Color(0, 0, 0, 1)
-self_modulate = Color(0, 0, 0, 1)
 material = SubResource("CanvasItemMaterial_bar8l")
 custom_minimum_size = Vector2(380.465, 485)
 layout_mode = 2
 theme = SubResource("Theme_sjx3u")
 stretch_mode = 5
-script = ExtResource("2_c36mr")
 
 [node name="Label" type="Label" parent="Node/CanvasLayer/PanelContainer/verbinding/Panel/GridContainer"]
 custom_minimum_size = Vector2(580, 450)
@@ -435,9 +569,9 @@ theme_override_styles/hover = SubResource("StyleBoxFlat_j8o30")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_dv0b8")
 theme_override_styles/normal = SubResource("StyleBoxFlat_ct1ak")
 text = "Upload foto"
-script = ExtResource("4_0e7jk")
-TextureRectPath = NodePath("../QuestionImage")
-FileDialogPath = NodePath("../FileDialog")
+script = ExtResource("4_hln5t")
+texture_rect_path = NodePath("../QuestionImage")
+file_dialog_path = NodePath("../FileDialog")
 
 [node name="FileDialog" type="FileDialog" parent="Node/CanvasLayer/PanelContainer/Question_1/Panel/GridContainer"]
 position = Vector2i(545, 195)
@@ -493,9 +627,9 @@ theme_override_styles/hover = SubResource("StyleBoxFlat_j8o30")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_dv0b8")
 theme_override_styles/normal = SubResource("StyleBoxFlat_ct1ak")
 text = "Upload foto"
-script = ExtResource("4_0e7jk")
-TextureRectPath = NodePath("../AnswerImage")
-FileDialogPath = NodePath("../FileDialog")
+script = ExtResource("4_hln5t")
+texture_rect_path = NodePath("../AnswerImage")
+file_dialog_path = NodePath("../FileDialog")
 
 [node name="AnswerText" type="TextEdit" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/VBoxContainer"]
 custom_minimum_size = Vector2(0, 200)
@@ -717,7 +851,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 1"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score1")
 
 [node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_1/score_panel/slidervalues"]
@@ -732,7 +866,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 2"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score2")
 
 [node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_1/score_panel/slidervalues"]
@@ -747,7 +881,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 3"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score3")
 
 [node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_1/score_panel/slidervalues"]
@@ -762,7 +896,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 4"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_1"]
@@ -1073,7 +1207,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 1"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score1")
 
 [node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_2/score_panel/slidervalues"]
@@ -1088,7 +1222,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 2"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score2")
 
 [node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_2/score_panel/slidervalues"]
@@ -1103,7 +1237,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 3"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score3")
 
 [node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_2/score_panel/slidervalues"]
@@ -1118,7 +1252,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 4"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_2"]
@@ -1439,7 +1573,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 1"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score1")
 
 [node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_3/score_panel/slidervalues"]
@@ -1454,7 +1588,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 2"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score2")
 
 [node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_3/score_panel/slidervalues"]
@@ -1469,7 +1603,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 3"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score3")
 
 [node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_3/score_panel/slidervalues"]
@@ -1484,7 +1618,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 4"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_3"]
@@ -1805,7 +1939,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 1"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score1")
 
 [node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_4/score_panel/slidervalues"]
@@ -1820,7 +1954,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 2"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score2")
 
 [node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_4/score_panel/slidervalues"]
@@ -1835,7 +1969,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 3"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score3")
 
 [node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_4/score_panel/slidervalues"]
@@ -1850,7 +1984,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 4"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_1/Panel/GridContainer/Option_4"]
@@ -2042,9 +2176,9 @@ theme_override_styles/hover = SubResource("StyleBoxFlat_j8o30")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_dv0b8")
 theme_override_styles/normal = SubResource("StyleBoxFlat_ct1ak")
 text = "Upload foto"
-script = ExtResource("4_0e7jk")
-TextureRectPath = NodePath("../QuestionImage")
-FileDialogPath = NodePath("../FileDialog")
+script = ExtResource("4_hln5t")
+texture_rect_path = NodePath("../QuestionImage")
+file_dialog_path = NodePath("../FileDialog")
 
 [node name="FileDialog" type="FileDialog" parent="Node/CanvasLayer/PanelContainer/Question_2/Panel/GridContainer"]
 auto_translate_mode = 1
@@ -2101,9 +2235,9 @@ theme_override_styles/hover = SubResource("StyleBoxFlat_j8o30")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_dv0b8")
 theme_override_styles/normal = SubResource("StyleBoxFlat_ct1ak")
 text = "Upload foto"
-script = ExtResource("4_0e7jk")
-TextureRectPath = NodePath("../AnswerImage")
-FileDialogPath = NodePath("../FileDialog")
+script = ExtResource("4_hln5t")
+texture_rect_path = NodePath("../AnswerImage")
+file_dialog_path = NodePath("../FileDialog")
 
 [node name="AnswerText" type="TextEdit" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/VBoxContainer"]
 custom_minimum_size = Vector2(0, 200)
@@ -2326,7 +2460,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 1"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score1")
 
 [node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_1/score_panel/slidervalues"]
@@ -2341,7 +2475,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 2"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score2")
 
 [node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_1/score_panel/slidervalues"]
@@ -2356,7 +2490,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 3"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score3")
 
 [node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_1/score_panel/slidervalues"]
@@ -2371,7 +2505,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 4"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_1"]
@@ -2692,7 +2826,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 1"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score1")
 
 [node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_2/score_panel/slidervalues"]
@@ -2707,7 +2841,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 2"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score2")
 
 [node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_2/score_panel/slidervalues"]
@@ -2722,7 +2856,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 3"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score3")
 
 [node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_2/score_panel/slidervalues"]
@@ -2737,7 +2871,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 4"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_2"]
@@ -3058,7 +3192,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 1"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score1")
 
 [node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_3/score_panel/slidervalues"]
@@ -3073,7 +3207,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 2"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score2")
 
 [node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_3/score_panel/slidervalues"]
@@ -3088,7 +3222,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 3"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score3")
 
 [node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_3/score_panel/slidervalues"]
@@ -3103,7 +3237,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 4"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_3"]
@@ -3424,7 +3558,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 1"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score1")
 
 [node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_4/score_panel/slidervalues"]
@@ -3439,7 +3573,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 2"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score2")
 
 [node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_4/score_panel/slidervalues"]
@@ -3454,7 +3588,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 3"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score3")
 
 [node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_4/score_panel/slidervalues"]
@@ -3469,7 +3603,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 4"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_2/Panel/GridContainer/Option_4"]
@@ -3661,9 +3795,9 @@ theme_override_styles/hover = SubResource("StyleBoxFlat_j8o30")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_dv0b8")
 theme_override_styles/normal = SubResource("StyleBoxFlat_ct1ak")
 text = "Upload foto"
-script = ExtResource("4_0e7jk")
-TextureRectPath = NodePath("../QuestionImage")
-FileDialogPath = NodePath("../FileDialog")
+script = ExtResource("4_hln5t")
+texture_rect_path = NodePath("../QuestionImage")
+file_dialog_path = NodePath("../FileDialog")
 
 [node name="FileDialog" type="FileDialog" parent="Node/CanvasLayer/PanelContainer/Question_3/Panel/GridContainer"]
 auto_translate_mode = 1
@@ -3720,9 +3854,9 @@ theme_override_styles/hover = SubResource("StyleBoxFlat_j8o30")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_dv0b8")
 theme_override_styles/normal = SubResource("StyleBoxFlat_ct1ak")
 text = "Upload foto"
-script = ExtResource("4_0e7jk")
-TextureRectPath = NodePath("../AnswerImage")
-FileDialogPath = NodePath("../FileDialog")
+script = ExtResource("4_hln5t")
+texture_rect_path = NodePath("../AnswerImage")
+file_dialog_path = NodePath("../FileDialog")
 
 [node name="AnswerText" type="TextEdit" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/VBoxContainer"]
 custom_minimum_size = Vector2(0, 200)
@@ -3945,7 +4079,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 1"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score1")
 
 [node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_1/score_panel/slidervalues"]
@@ -3960,7 +4094,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 2"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score2")
 
 [node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_1/score_panel/slidervalues"]
@@ -3975,7 +4109,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 3"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score3")
 
 [node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_1/score_panel/slidervalues"]
@@ -3990,7 +4124,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 4"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_1"]
@@ -4311,7 +4445,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 1"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score1")
 
 [node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_2/score_panel/slidervalues"]
@@ -4326,7 +4460,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 2"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score2")
 
 [node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_2/score_panel/slidervalues"]
@@ -4341,7 +4475,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 3"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score3")
 
 [node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_2/score_panel/slidervalues"]
@@ -4356,7 +4490,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 4"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_2"]
@@ -4677,7 +4811,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 1"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score1")
 
 [node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_3/score_panel/slidervalues"]
@@ -4692,7 +4826,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 2"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score2")
 
 [node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_3/score_panel/slidervalues"]
@@ -4707,7 +4841,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 3"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score3")
 
 [node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_3/score_panel/slidervalues"]
@@ -4722,7 +4856,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 4"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_3"]
@@ -5043,7 +5177,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 1"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score1")
 
 [node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_4/score_panel/slidervalues"]
@@ -5058,7 +5192,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 2"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score2")
 
 [node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_4/score_panel/slidervalues"]
@@ -5073,7 +5207,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 3"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score3")
 
 [node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_4/score_panel/slidervalues"]
@@ -5088,7 +5222,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 4"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_3/Panel/GridContainer/Option_4"]
@@ -5280,9 +5414,9 @@ theme_override_styles/hover = SubResource("StyleBoxFlat_j8o30")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_dv0b8")
 theme_override_styles/normal = SubResource("StyleBoxFlat_ct1ak")
 text = "Upload foto"
-script = ExtResource("4_0e7jk")
-TextureRectPath = NodePath("../QuestionImage")
-FileDialogPath = NodePath("../FileDialog")
+script = ExtResource("4_hln5t")
+texture_rect_path = NodePath("../QuestionImage")
+file_dialog_path = NodePath("../FileDialog")
 
 [node name="FileDialog" type="FileDialog" parent="Node/CanvasLayer/PanelContainer/Question_4/Panel/GridContainer"]
 auto_translate_mode = 1
@@ -5339,9 +5473,9 @@ theme_override_styles/hover = SubResource("StyleBoxFlat_j8o30")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_dv0b8")
 theme_override_styles/normal = SubResource("StyleBoxFlat_ct1ak")
 text = "Upload foto"
-script = ExtResource("4_0e7jk")
-TextureRectPath = NodePath("../AnswerImage")
-FileDialogPath = NodePath("../FileDialog")
+script = ExtResource("4_hln5t")
+texture_rect_path = NodePath("../AnswerImage")
+file_dialog_path = NodePath("../FileDialog")
 
 [node name="AnswerText" type="TextEdit" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/VBoxContainer"]
 custom_minimum_size = Vector2(0, 200)
@@ -5564,7 +5698,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 1"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score1")
 
 [node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_1/score_panel/slidervalues"]
@@ -5579,7 +5713,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 2"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score2")
 
 [node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_1/score_panel/slidervalues"]
@@ -5594,7 +5728,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 3"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score3")
 
 [node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_1/score_panel/slidervalues"]
@@ -5609,7 +5743,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 4"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_1"]
@@ -5930,7 +6064,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 1"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score1")
 
 [node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_2/score_panel/slidervalues"]
@@ -5945,7 +6079,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 2"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score2")
 
 [node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_2/score_panel/slidervalues"]
@@ -5960,7 +6094,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 3"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score3")
 
 [node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_2/score_panel/slidervalues"]
@@ -5975,7 +6109,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 4"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_2"]
@@ -6296,7 +6430,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 1"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score1")
 
 [node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_3/score_panel/slidervalues"]
@@ -6311,7 +6445,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 2"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score2")
 
 [node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_3/score_panel/slidervalues"]
@@ -6326,7 +6460,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 3"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score3")
 
 [node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_3/score_panel/slidervalues"]
@@ -6341,7 +6475,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 4"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_3"]
@@ -6662,7 +6796,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 1"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score1")
 
 [node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_4/score_panel/slidervalues"]
@@ -6677,7 +6811,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 2"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score2")
 
 [node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_4/score_panel/slidervalues"]
@@ -6692,7 +6826,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 3"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score3")
 
 [node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_4/score_panel/slidervalues"]
@@ -6707,7 +6841,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 4"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_4/Panel/GridContainer/Option_4"]
@@ -6899,9 +7033,9 @@ theme_override_styles/hover = SubResource("StyleBoxFlat_j8o30")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_dv0b8")
 theme_override_styles/normal = SubResource("StyleBoxFlat_ct1ak")
 text = "Upload foto"
-script = ExtResource("4_0e7jk")
-TextureRectPath = NodePath("../QuestionImage")
-FileDialogPath = NodePath("../FileDialog")
+script = ExtResource("4_hln5t")
+texture_rect_path = NodePath("../QuestionImage")
+file_dialog_path = NodePath("../FileDialog")
 
 [node name="FileDialog" type="FileDialog" parent="Node/CanvasLayer/PanelContainer/Question_5/Panel/GridContainer"]
 auto_translate_mode = 1
@@ -6958,9 +7092,9 @@ theme_override_styles/hover = SubResource("StyleBoxFlat_j8o30")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_dv0b8")
 theme_override_styles/normal = SubResource("StyleBoxFlat_ct1ak")
 text = "Upload foto"
-script = ExtResource("4_0e7jk")
-TextureRectPath = NodePath("../AnswerImage")
-FileDialogPath = NodePath("../FileDialog")
+script = ExtResource("4_hln5t")
+texture_rect_path = NodePath("../AnswerImage")
+file_dialog_path = NodePath("../FileDialog")
 
 [node name="AnswerText" type="TextEdit" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/VBoxContainer"]
 custom_minimum_size = Vector2(0, 200)
@@ -7183,7 +7317,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 1"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score1")
 
 [node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_1/score_panel/slidervalues"]
@@ -7198,7 +7332,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 2"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score2")
 
 [node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_1/score_panel/slidervalues"]
@@ -7213,7 +7347,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 3"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score3")
 
 [node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_1/score_panel/slidervalues"]
@@ -7228,7 +7362,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 4"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_1"]
@@ -7549,7 +7683,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 1"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score1")
 
 [node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_2/score_panel/slidervalues"]
@@ -7564,7 +7698,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 2"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score2")
 
 [node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_2/score_panel/slidervalues"]
@@ -7579,7 +7713,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 3"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score3")
 
 [node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_2/score_panel/slidervalues"]
@@ -7594,7 +7728,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 4"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_2"]
@@ -7915,7 +8049,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 1"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score1")
 
 [node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_3/score_panel/slidervalues"]
@@ -7930,7 +8064,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 2"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score2")
 
 [node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_3/score_panel/slidervalues"]
@@ -7945,7 +8079,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 3"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score3")
 
 [node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_3/score_panel/slidervalues"]
@@ -7960,7 +8094,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 4"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_3"]
@@ -8281,7 +8415,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 1"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score1")
 
 [node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_4/score_panel/slidervalues"]
@@ -8296,7 +8430,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 2"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score2")
 
 [node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_4/score_panel/slidervalues"]
@@ -8311,7 +8445,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 3"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score3")
 
 [node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_4/score_panel/slidervalues"]
@@ -8326,7 +8460,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 4"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_5/Panel/GridContainer/Option_4"]
@@ -8518,9 +8652,9 @@ theme_override_styles/hover = SubResource("StyleBoxFlat_j8o30")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_dv0b8")
 theme_override_styles/normal = SubResource("StyleBoxFlat_ct1ak")
 text = "Upload foto"
-script = ExtResource("4_0e7jk")
-TextureRectPath = NodePath("../QuestionImage")
-FileDialogPath = NodePath("../FileDialog")
+script = ExtResource("4_hln5t")
+texture_rect_path = NodePath("../QuestionImage")
+file_dialog_path = NodePath("../FileDialog")
 
 [node name="FileDialog" type="FileDialog" parent="Node/CanvasLayer/PanelContainer/Question_6/Panel/GridContainer"]
 auto_translate_mode = 1
@@ -8577,9 +8711,9 @@ theme_override_styles/hover = SubResource("StyleBoxFlat_j8o30")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_dv0b8")
 theme_override_styles/normal = SubResource("StyleBoxFlat_ct1ak")
 text = "Upload foto"
-script = ExtResource("4_0e7jk")
-TextureRectPath = NodePath("../AnswerImage")
-FileDialogPath = NodePath("../FileDialog")
+script = ExtResource("4_hln5t")
+texture_rect_path = NodePath("../AnswerImage")
+file_dialog_path = NodePath("../FileDialog")
 
 [node name="AnswerText" type="TextEdit" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/VBoxContainer"]
 custom_minimum_size = Vector2(0, 200)
@@ -8802,7 +8936,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 1"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score1")
 
 [node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_1/score_panel/slidervalues"]
@@ -8817,7 +8951,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 2"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score2")
 
 [node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_1/score_panel/slidervalues"]
@@ -8832,7 +8966,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 3"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score3")
 
 [node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_1/score_panel/slidervalues"]
@@ -8847,7 +8981,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 4"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_1"]
@@ -9168,7 +9302,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 1"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score1")
 
 [node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_2/score_panel/slidervalues"]
@@ -9183,7 +9317,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 2"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score2")
 
 [node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_2/score_panel/slidervalues"]
@@ -9198,7 +9332,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 3"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score3")
 
 [node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_2/score_panel/slidervalues"]
@@ -9213,7 +9347,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 4"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_2"]
@@ -9534,7 +9668,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 1"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score1")
 
 [node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_3/score_panel/slidervalues"]
@@ -9549,7 +9683,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 2"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score2")
 
 [node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_3/score_panel/slidervalues"]
@@ -9564,7 +9698,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 3"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score3")
 
 [node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_3/score_panel/slidervalues"]
@@ -9579,7 +9713,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 4"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_3"]
@@ -9900,7 +10034,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 1"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score1")
 
 [node name="score_2" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_4/score_panel/slidervalues"]
@@ -9915,7 +10049,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 2"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score2")
 
 [node name="score_3" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_4/score_panel/slidervalues"]
@@ -9930,7 +10064,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 3"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score3")
 
 [node name="score_4" type="LineEdit" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_4/score_panel/slidervalues"]
@@ -9945,7 +10079,7 @@ theme_override_styles/read_only = SubResource("StyleBoxFlat_7sjci")
 theme_override_styles/normal = SubResource("StyleBoxFlat_tp6a1")
 placeholder_text = "slider 4"
 expand_to_text_length = true
-script = ExtResource("8_nq7e1")
+script = SubResource("CSharpScript_0rxr1")
 SliderPath = NodePath("../../sliders/Score4")
 
 [node name="optie" type="Panel" parent="Node/CanvasLayer/PanelContainer/Answers_6/Panel/GridContainer/Option_4"]

@@ -1,6 +1,6 @@
 [gd_scene load_steps=8 format=3 uid="uid://uv8u1h8kd6kq"]
 
-[ext_resource type="Script" path="res://scripts/QuizSelection.cs" id="1_wnp7e"]
+[ext_resource type="Script" path="res://scripts/QuizSelection.gd" id="1_v61te"]
 [ext_resource type="FontFile" uid="uid://bp6kmo3o2pvcv" path="res://fonts/OpenSans-Regular.ttf" id="2_05kkd"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_3x0ou"]
@@ -31,7 +31,7 @@ border_color = Color(0.266667, 0.447059, 0.768627, 1)
 [node name="QuizSelection" type="Node2D"]
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
-script = ExtResource("1_wnp7e")
+script = ExtResource("1_v61te")
 
 [node name="PanelContainer" type="PanelContainer" parent="CanvasLayer"]
 anchors_preset = 15

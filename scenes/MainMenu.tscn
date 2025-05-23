@@ -1,6 +1,6 @@
 [gd_scene load_steps=8 format=3 uid="uid://b56vpaap66hgs"]
 
-[ext_resource type="Script" path="res://scripts/MainMenu.cs" id="1_eji6r"]
+[ext_resource type="Script" path="res://scripts/MainMenu.gd" id="1_brp0o"]
 [ext_resource type="FontFile" uid="uid://bp6kmo3o2pvcv" path="res://fonts/OpenSans-Regular.ttf" id="2_bme6n"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_8o5t8"]
@@ -37,7 +37,7 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
-script = ExtResource("1_eji6r")
+script = ExtResource("1_brp0o")
 
 [node name="PanelContainer" type="PanelContainer" parent="CanvasLayer"]
 anchors_preset = 15
